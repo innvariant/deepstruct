@@ -1,5 +1,5 @@
 import unittest
-import paddle.util
+import pypaddle.util
 import networkx as nx
 
 
@@ -18,7 +18,7 @@ class LayerIndexTest(unittest.TestCase):
         structure.add_edge(3, 5)
         structure.add_edge(4, 5)
 
-        layer_index, vertex_by_layer = paddle.util.build_layer_index(structure)
+        layer_index, vertex_by_layer = pypaddle.util.build_layer_index(structure)
 
         for n in nodes:
             self.assertTrue(n in layer_index)

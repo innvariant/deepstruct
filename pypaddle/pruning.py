@@ -1,9 +1,9 @@
 import torch
 import os
 import numpy as np
-import paddle.util
-import paddle.learning
-import paddle.sparse
+import pypaddle.util
+import pypaddle.learning
+import pypaddle.sparse
 from torch.autograd import grad
 from enum import Enum
 
@@ -122,27 +122,27 @@ def optimal_brain_surgeon_layer_wise(self, network, percentage):
     hessian_inverse_path = calculate_obsl_saliency(self, network)
 
     # prune the elements from the matrix
-    for name, layer in paddle.sparse.prunable_layers_with_name(network):
-        paddle.util.edge_cut(layer, hessian_inverse_path + name + '.npy', value=percentage)
+    for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
+        pypaddle.util.edge_cut(layer, hessian_inverse_path + name + '.npy', value=percentage)
 
 
 def optimal_brain_surgeon_layer_wise_bucket(self, network, bucket_size):
     hessian_inverse_path = calculate_obsl_saliency(self, network)
-    for name, layer in paddle.sparse.prunable_layers_with_name(network):
-        paddle.util.edge_cut(layer, hessian_inverse_path + name + '.npy', value=bucket_size, strategy=PruningStrategy.BUCKET)
+    for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
+        pypaddle.util.edge_cut(layer, hessian_inverse_path + name + '.npy', value=bucket_size, strategy=PruningStrategy.BUCKET)
 
 
 #
 # Random pruning
 #
 def random_pruning(self, network, percentage):
-    paddle.util.set_random_saliency(network)
+    pypaddle.util.set_random_saliency(network)
     # prune the percentage% weights with the smallest random saliency
     prune_network_by_saliency(network, percentage)
 
 
 def random_pruning_absolute(self, network, number):
-    paddle.util.set_random_saliency(network)
+    pypaddle.util.set_random_saliency(network)
     prune_network_by_saliency(network, number, strategy=PruningStrategy.ABSOLUTE)
 
 
@@ -193,13 +193,13 @@ def magnitude_class_distributed(self, network, percentage):
     :return:
     """
     # set saliency
-    paddle.util.set_distributed_saliency(network)
+    pypaddle.util.set_distributed_saliency(network)
     # prune network
     prune_network_by_saliency(network, percentage)
 
 
 def magnitude_class_distributed_absolute(self, network, number):
-    paddle.util.set_distributed_saliency(network)
+    pypaddle.util.set_distributed_saliency(network)
     prune_network_by_saliency(network, number, strategy=PruningStrategy.ABSOLUTE)
 
 
@@ -226,19 +226,19 @@ def prune_network_by_saliency(network, value, strategy=PruningStrategy.PERCENTAG
     :param strategy:  If percentage pruning or number of elements pruning is used.
     """
     # calculate the network's threshold
-    th = paddle.util.find_network_threshold(network, value, strategy=strategy)
+    th = pypaddle.util.find_network_threshold(network, value, strategy=strategy)
 
     # set the mask
-    for layer in paddle.sparse.prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         # All deleted weights should be set to zero so they should definetly be less than the threshold since this is
         # positive.
         layer.set_mask(torch.ge(layer.get_saliency(), th).float() * layer.get_mask())
 
 
 def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE):
-    pre_pruned_weight_count = paddle.util.get_network_weight_count(network).item()
+    pre_pruned_weight_count = pypaddle.util.get_network_weight_count(network).item()
 
-    for layer in paddle.sparse.prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         mask = list(layer.get_mask().abs().numpy().flatten())
         saliency = list(layer.get_saliency().numpy().flatten())
         _, filtered_saliency = zip(
@@ -269,14 +269,14 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
 
 def calculate_obd_saliency(self, network):
     # the loss of the network on the cross validation set
-    loss = paddle.learning.cross_validation_error(self.valid_dataset, network, self.criterion)
+    loss = pypaddle.learning.cross_validation_error(self.valid_dataset, network, self.criterion)
 
     # calculate the first order gradients for all weights from the pruning layers.
-    weight_params = map(lambda x: x.get_weight(), paddle.sparse.prunable_layers(network))
+    weight_params = map(lambda x: x.get_weight(), pypaddle.sparse.prunable_layers(network))
     loss_grads = grad(loss, weight_params, create_graph=True)
 
     # iterate over all layers and zip them with their corrosponding first gradient
-    for grd, layer in zip(loss_grads, paddle.sparse.prunable_layers(network)):
+    for grd, layer in zip(loss_grads, pypaddle.sparse.prunable_layers(network)):
         all_grads = []
         mask = layer.get_mask().view(-1)
         weight = layer.get_weight()
@@ -316,12 +316,12 @@ def calculate_obsl_saliency(self, network):
     hessian_inverse_path = out_dir + '/inverse/'
 
     # generate the input in the layers and save it for every batch
-    paddle.util.keep_input_layerwise(network)
+    pypaddle.util.keep_input_layerwise(network)
 
     for i, (images, labels) in enumerate(self.valid_dataset):
         images = images.reshape(-1, 28 * 28)
         network(images)
-        for name, layer in paddle.sparse.prunable_layers_with_name(network):
+        for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
             layer_input = layer.layer_input.data.numpy()
             path = layer_input_path + name + '/'
             if not os.path.exists(path):
@@ -330,8 +330,8 @@ def calculate_obsl_saliency(self, network):
             np.save(path + 'layerinput-' + str(i), layer_input)
 
     # generate the hessian matrix for each layer
-    for name, layer in paddle.sparse.prunable_layers_with_name(network):
+    for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
         hessian_inverse_location = hessian_inverse_path + name
-        paddle.util.generate_hessian_inverse_fc(layer, hessian_inverse_location, layer_input_path + name)
+        pypaddle.util.generate_hessian_inverse_fc(layer, hessian_inverse_location, layer_input_path + name)
 
     return hessian_inverse_path

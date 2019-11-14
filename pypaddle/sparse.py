@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import networkx as nx
 import numpy as np
-import paddle.util
+import pypaddle.util
 from torch.autograd import Variable
 
 
@@ -134,7 +134,7 @@ class CachedLayeredGraph(LayeredGraph):
         return self._get_layer_index()[1][layer]
 
     def _build_layer_index(self):
-        self._layer_index, self._vertex_by_layer = paddle.util.build_layer_index(self)
+        self._layer_index, self._vertex_by_layer = pypaddle.util.build_layer_index(self)
 
     @property
     def first_layer(self):

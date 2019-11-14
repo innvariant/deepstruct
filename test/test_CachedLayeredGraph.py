@@ -1,12 +1,12 @@
 import unittest
 import numpy as np
-import paddle.sparse
+import pypaddle.sparse
 
 
 class CachedLayeredGraphTest(unittest.TestCase):
 
     def test_default(self):
-        layered_graph = paddle.sparse.CachedLayeredGraph()
+        layered_graph = pypaddle.sparse.CachedLayeredGraph()
 
         layered_graph.add_nodes_from(np.arange(1, 7))
 

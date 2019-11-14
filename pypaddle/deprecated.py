@@ -3,7 +3,7 @@ import torch.nn as nn
 from typing import Callable
 from torch.nn import functional as F
 
-from paddle.sparse import LayeredGraph, MaskedLinearLayer
+from pypaddle.sparse import LayeredGraph, MaskedLinearLayer
 
 
 class LinearBlockUnit(nn.Module):

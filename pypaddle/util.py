@@ -6,8 +6,8 @@ import networkx as nx
 import numpy as np
 import torchvision
 
-import paddle.pruning
-import paddle.sparse
+import pypaddle.pruning
+import pypaddle.sparse
 
 from torch.utils.data import SubsetRandomSampler
 
@@ -151,7 +151,7 @@ def generate_hessian_inverse_fc(layer, hessian_inverse_path, layer_input_train_d
     np.save(hessian_inverse_path, hessian_inverse)
 
 
-def edge_cut(layer, hessian_inverse_path, value, strategy=paddle.pruning.PruningStrategy.PERCENTAGE):
+def edge_cut(layer, hessian_inverse_path, value, strategy=pypaddle.pruning.PruningStrategy.PERCENTAGE):
     """
     This function prune weights of biases based on given hessian inverse and cut ratio
     :param hessian_inverse_path:
@@ -175,10 +175,10 @@ def edge_cut(layer, hessian_inverse_path, value, strategy=paddle.pruning.Pruning
     # gate_b = np.ones([n_hidden_2])
 
     # calculate number of pruneable elements
-    if strategy is paddle.pruning.PruningStrategy.PERCENTAGE:
+    if strategy is pypaddle.pruning.PruningStrategy.PERCENTAGE:
         cut_ratio = value / 100  # transfer percentage from full value to floating point
         max_pruned_num = math.floor(layer.get_weight_count() * cut_ratio)
-    elif strategy is paddle.pruning.PruningStrategy.BUCKET:
+    elif strategy is pypaddle.pruning.PruningStrategy.BUCKET:
         max_pruned_num = value
     else:
         raise ValueError('Currently not implemented')
@@ -230,7 +230,7 @@ def edge_cut(layer, hessian_inverse_path, value, strategy=paddle.pruning.Pruning
 
 def find_network_threshold(network, value, strategy):
     all_sal = []
-    for layer in prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         # flatten both weights and mask
         mask = list(layer.get_mask().abs().numpy().flatten())
         saliency = list(layer.get_saliency().numpy().flatten())
@@ -242,9 +242,9 @@ def find_network_threshold(network, value, strategy):
         all_sal += filtered_saliency
 
     # calculate percentile
-    if strategy is paddle.pruning.PruningStrategy.PERCENTAGE:
+    if strategy is pypaddle.pruning.PruningStrategy.PERCENTAGE:
         return np.percentile(np.array(all_sal), value)
-    elif strategy is paddle.pruning.PruningStrategy.ABSOLUTE:
+    elif strategy is pypaddle.pruning.PruningStrategy.ABSOLUTE:
         # check if there are enough elements to prune
         if value >= len(all_sal):
             return np.argmax(np.array(all_sal)).item() + 1
@@ -252,7 +252,7 @@ def find_network_threshold(network, value, strategy):
             # determine threshold
             index = np.argsort(np.array(all_sal))[value]
             return np.array(all_sal)[index].item()
-    elif strategy is paddle.pruning.PruningStrategy.BUCKET:
+    elif strategy is pypaddle.pruning.PruningStrategy.BUCKET:
         sorted_array = np.sort(all_sal)
         sum_array = 0
 
@@ -270,16 +270,16 @@ def find_network_threshold(network, value, strategy):
 
 def set_random_saliency(network):
     # set saliency to random values
-    for layer in paddle.sparse.prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         layer.set_saliency(torch.rand_like(layer.get_weight()) * layer.get_mask())
 
 def set_random_masks(module : nn.Module):
-    if isinstance(module, paddle.sparse.MaskedLinearLayer):
+    if isinstance(module, pypaddle.sparse.MaskedLinearLayer):
         module.set_mask(torch.round(torch.rand_like(module.get_weight())))
 
 def set_distributed_saliency(network):
     # prune from each layer the according number of elements
-    for layer in paddle.sparse.prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         # calculate standard deviation for the layer
         w = layer.get_weight().data
         st_v = 1 / w.std()
@@ -298,14 +298,14 @@ def get_filtered_saliency(saliency, mask):
 
 def get_layer_count(network):
     i = 0
-    for _ in paddle.sparse.prunable_layers_with_name(network):
+    for _ in pypaddle.sparse.prunable_layers_with_name(network):
         i += 1
     return i
 
 
 def get_weight_distribution(network):
     all_weights = []
-    for layer in paddle.sparse.prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         mask = list(layer.get_mask().numpy().flatten())
         weights = list(layer.get_weight().data.numpy().flatten())
 
@@ -320,16 +320,16 @@ def get_weight_distribution(network):
 
 def get_network_weight_count(network):
     total_weights = 0
-    for layer in paddle.sparse.prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         total_weights += layer.get_weight_count()
     return total_weights
 
 
 def reset_pruned_network(network):
-    for layer in paddle.sparse.prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         layer.reset_parameters(keep_mask=True)
 
 
 def keep_input_layerwise(network):
-    for layer in paddle.sparse.prunable_layers(network):
+    for layer in pypaddle.sparse.prunable_layers(network):
         layer.keep_layer_input = True

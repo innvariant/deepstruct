@@ -1,26 +1,35 @@
-import os
-import numpy as np
 import torch
 import torch.nn as nn
 import unittest
+import shutil
 
-from torch.utils.data import SubsetRandomSampler
-
-import paddle.deprecated
-import paddle.sparse
-import paddle.util
+import pypaddle.deprecated
+import pypaddle.sparse
+import pypaddle.util
 import networkx as nx
-import torchvision
-from paddle.learning import train, test
-from torchvision.transforms import transforms
+from pypaddle.learning import train, test
 
 class DeepDACellNetworkTest(unittest.TestCase):
+    def setUp(self):
+        self.possible_dataset_roots = ['/media/data/set/mnist', 'data/set/mnist']
+        self.batch_size = 100
+        self.train_loader, self.test_loader, _, self.dataset_root = pypaddle.util.get_mnist_loaders(self.batch_size, self.possible_dataset_roots)
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        feature, labels = iter(self.train_loader).next()
+        self.input_shape = feature.shape[1:]
+        self.output_size = int(labels.shape[-1])
+
+    def tearDown(self):
+        if self.dataset_root is not self.possible_dataset_roots[0]:
+            print('Deleting', self.dataset_root)
+            shutil.rmtree(self.dataset_root)
+
     def test_develop(self):
         return
 
         # Arrange
         random_graph = nx.watts_strogatz_graph(30, 3, 0.8)
-        structure = paddle.sparse.CachedLayeredGraph()
+        structure = pypaddle.sparse.CachedLayeredGraph()
         structure.add_edges_from(random_graph.edges)
         structure.add_nodes_from(random_graph.nodes)
 
@@ -91,63 +100,9 @@ class DeepDACellNetworkTest(unittest.TestCase):
         def count_parameters(model):
             return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-        print('Trainable params', count_parameters(model))
-        print('Total params', sum(p.numel() for p in model.parameters()))
-        print('Non-trainable params', sum(p.numel() for p in model.parameters() if not p.requires_grad))
-
-        data_base_path = '/home/julian/data'
-
-        batch_size = 100
-
-        custom_transform = transforms.Compose([
-            transforms.ToTensor(),  # first, convert image to PyTorch tensor
-            transforms.Normalize((0.1307,), (0.3081,))  # normalize inputs
-        ])
         # download and transform train dataset
-        mnist_train_loader = torch.utils.data.DataLoader(
-            torchvision.datasets.MNIST(os.path.join(data_base_path, 'set/mnist/'),
-                                       download=True,
-                                       train=True,
-                                       transform=custom_transform),
-            batch_size=batch_size,
-            shuffle=True)
-
-        # download and transform test dataset
-        mnist_test_loader = torch.utils.data.DataLoader(
-            torchvision.datasets.MNIST(os.path.join(data_base_path, 'set/mnist/'),
-                                       download=True,
-                                       train=False,
-                                       transform=custom_transform),
-            batch_size=batch_size,
-            shuffle=True)
-
-        class ReshapeTransform:
-            def __init__(self, new_size):
-                self.new_size = new_size
-
-            def __call__(self, img):
-                return torch.reshape(img, self.new_size)
-
-        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)), ReshapeTransform((3, 32, 32))])
-
-        dataset_root = '/media/data/set/cifar10'
-        if not os.path.exists(dataset_root):
-            os.makedirs(dataset_root)
-        train_set = torchvision.datasets.CIFAR10(root=dataset_root, train=True, download=True, transform=transform)
-        test_set = torchvision.datasets.CIFAR10(root=dataset_root, train=False, download=True, transform=transform)
-        # Training
-        n_training_samples = 20000
-        train_sampler = SubsetRandomSampler(np.arange(n_training_samples, dtype=np.int64))
-        # Validation
-        n_val_samples = 5000
-        val_sampler = SubsetRandomSampler(np.arange(n_training_samples, n_training_samples + n_val_samples, dtype=np.int64))
-        # Test
-        n_test_samples = 5000
-        test_sampler = SubsetRandomSampler(np.arange(n_test_samples, dtype=np.int64))
-        batch_size = 100
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=train_sampler, num_workers=2)
-        test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, sampler=test_sampler, num_workers=2)
-        val_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=val_sampler, num_workers=2)
+        mnist_train_loader = self.train_loader
+        mnist_test_loader = self.test_loader
 
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         print(device)

@@ -1,14 +1,14 @@
 import unittest
 import numpy as np
-import paddle.util
-import paddle.sparse
+import pypaddle.util
+import pypaddle.sparse
 import networkx as nx
 
 class MaskedDeepDANTest(unittest.TestCase):
     def test_traversal(self):
         # Arrange
         random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-        structure = paddle.sparse.CachedLayeredGraph()
+        structure = pypaddle.sparse.CachedLayeredGraph()
         structure.add_edges_from(random_graph.edges)
         structure.add_nodes_from(random_graph.nodes)
 
@@ -17,14 +17,14 @@ class MaskedDeepDANTest(unittest.TestCase):
     def test_random_structures_success(self):
         # Arrange
         random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-        structure = paddle.sparse.CachedLayeredGraph()
+        structure = pypaddle.sparse.CachedLayeredGraph()
         structure.add_edges_from(random_graph.edges)
         structure.add_nodes_from(random_graph.nodes)
-        model = paddle.sparse.MaskedDeepDAN(784, 10, structure)
+        model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
 
         # Act
         extracted_structure = model.generate_structure()
-        new_model = paddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
+        new_model = pypaddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
 
         # Assert
         #self.assertTrue(nx.algorithms.isomorphism.faster_could_be_isomorphic(structure, extracted_structure))
@@ -34,36 +34,36 @@ class MaskedDeepDANTest(unittest.TestCase):
     def test_random_structures_with_input_and_output_success(self):
         # Arrange
         random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-        structure = paddle.sparse.CachedLayeredGraph()
+        structure = pypaddle.sparse.CachedLayeredGraph()
         structure.add_edges_from(random_graph.edges)
         structure.add_nodes_from(random_graph.nodes)
-        model = paddle.sparse.MaskedDeepDAN(784, 10, structure)
+        model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
 
         # Act
         extracted_structure = model.generate_structure(include_input=True, include_output=True)
-        new_model = paddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
+        new_model = pypaddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
 
     def test_apply_mask_success(self):
         random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-        structure = paddle.sparse.CachedLayeredGraph()
+        structure = pypaddle.sparse.CachedLayeredGraph()
         structure.add_edges_from(random_graph.edges)
         structure.add_nodes_from(random_graph.nodes)
-        model = paddle.sparse.MaskedDeepDAN(784, 10, structure)
+        model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
 
         previous_weights = []
-        for layer in paddle.sparse.maskable_layers(model):
+        for layer in pypaddle.sparse.maskable_layers(model):
             previous_weights.append(np.copy(layer.weight.detach().numpy()))
 
         model.apply_mask()
 
         different = []
-        for layer, previous_weight in zip(paddle.sparse.maskable_layers(model), previous_weights):
+        for layer, previous_weight in zip(pypaddle.sparse.maskable_layers(model), previous_weights):
             different.append(not np.all(np.equal(np.array(previous_weight), np.array(layer.weight.detach().numpy()))))
         self.assertTrue(np.any(different))
 
 
     def test_get_structure(self):
-        structure = paddle.sparse.CachedLayeredGraph()
+        structure = pypaddle.sparse.CachedLayeredGraph()
 
         block0_size = 8
         block1_size = 8
@@ -114,29 +114,16 @@ class MaskedDeepDANTest(unittest.TestCase):
             for t in block6:
                 structure.add_edge(v, t)
 
-        model = paddle.sparse.MaskedDeepDAN(784, 10, structure)
+        model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
         print(model)
 
         new_structure = model.generate_structure(include_input=False, include_output=False)
 
-        print('Obtained structure')
-        #print('First layer size', new_structure.first_layer_size)
-        #print('Last layer size', new_structure.last_layer_size)
-        #print('Layers', new_structure.layers)
-        #print(len(new_structure.nodes))
-
-        """
-        print('Drawing ..')
-        nx.draw(structure)
-        plt.show()
-        nx.draw(new_structure)
-        plt.show()"""
-
-        model2 = paddle.sparse.MaskedDeepDAN(784, 10, new_structure)
+        model2 = pypaddle.sparse.MaskedDeepDAN(784, 10, new_structure)
         print(model2)
 
     def test_dev(self):
-        structure = paddle.sparse.CachedLayeredGraph()
+        structure = pypaddle.sparse.CachedLayeredGraph()
         structure.add_nodes_from(np.arange(1, 7))
 
         block0_size = 50
@@ -182,5 +169,4 @@ class MaskedDeepDANTest(unittest.TestCase):
             for t in block6:
                 structure.add_edge(v, t)
 
-        model = paddle.sparse.MaskedDeepDAN(784, 10, structure)
-        print(model)
+        model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)

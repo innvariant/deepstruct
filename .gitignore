@@ -8,6 +8,7 @@ build/
 *.c
 *.so
 dist/
+pypaddle.egg*
 
 # Log-directories
 tensorboard/

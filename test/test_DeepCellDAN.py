@@ -1,25 +1,18 @@
 import math
-import os
-import numpy as np
 import torch
 import torch.nn as nn
 import unittest
 
-from torch.utils.data import SubsetRandomSampler
-
-import paddle.deprecated
-import paddle.sparse
-import paddle.util
-import networkx as nx
-import torchvision
-from paddle.learning import train, test
-from torchvision.transforms import transforms
+import pypaddle.deprecated
+import pypaddle.sparse
+import pypaddle.util
+from pypaddle.learning import train, test
 
 class DeepCellDANTest(unittest.TestCase):
     def test_development(self):
         return
 
-        train_loader, test_loader, val_loader = paddle.util.get_cifar10_loaders()
+        train_loader, test_loader, val_loader = pypaddle.util.get_cifar10_loaders()
 
         class ReductionCell(nn.Module):
             def __init__(self, input_channels, output_channels):
@@ -67,18 +60,9 @@ class DeepCellDANTest(unittest.TestCase):
         def count_parameters(model):
             return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-        print('Trainable params', count_parameters(model))
-        print('Total params', sum(p.numel() for p in model.parameters()))
-        print('Non-trainable params', sum(p.numel() for p in model.parameters() if not p.requires_grad))
-
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
         print(device)
         model.to(device)
-
-        #x = torch.randn(16, 3, 300, 300, device=device)
-        #y = model(x)
-        #print(y.shape)
-        #exit(0)
 
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01, betas=(0.9, 0.999), eps=1e-8, weight_decay=0)
         loss_func = nn.CrossEntropyLoss()
