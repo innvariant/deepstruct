@@ -3,12 +3,12 @@ import itertools
 import torch
 import torch.utils
 import unittest
-import paddle.sparse
+import pypaddle.sparse
 import numpy as np
 import shutil
 
-from paddle.util import get_mnist_loaders
-from paddle.learning import train, test
+from pypaddle.util import get_mnist_loaders
+from pypaddle.learning import train, test
 
 
 class FFN2DANTest(unittest.TestCase):
@@ -30,7 +30,7 @@ class FFN2DANTest(unittest.TestCase):
         loss = torch.nn.CrossEntropyLoss()
 
         num_epochs = 2
-        model = paddle.sparse.MaskedDeepFFN(self.input_shape, self.output_size, [100, 50, 20])
+        model = pypaddle.sparse.MaskedDeepFFN(self.input_shape, self.output_size, [100, 50, 20])
         model.to(self.device)
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
@@ -61,7 +61,7 @@ class FFN2DANTest(unittest.TestCase):
 
                 structure.add_edges_from([edge for edge in itertools.product(random_source_nodes, random_target_nodes)])
 
-        dan_model = paddle.sparse.MaskedDeepDAN(self.input_shape, self.output_size, structure)
+        dan_model = pypaddle.sparse.MaskedDeepDAN(self.input_shape, self.output_size, structure)
         dan_model.to(self.device)
         dan_optimizer = torch.optim.SGD(dan_model.parameters(), lr=0.01)
 

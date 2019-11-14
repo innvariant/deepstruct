@@ -1,15 +1,15 @@
 import numpy as np
 import torch
 import unittest
-import paddle.sparse
-import paddle.util
+import pypaddle.sparse
+import pypaddle.util
 
 
 class MaskedLinearLayerTest(unittest.TestCase):
     def test_set_mask_explicitly_success(self):
         input_size = 5
         output_size = 2
-        layer = paddle.sparse.MaskedLinearLayer(input_size, output_size)
+        layer = pypaddle.sparse.MaskedLinearLayer(input_size, output_size)
         mask = torch.zeros((output_size, input_size), dtype=torch.bool)
         mask[0, 0] = 1
         mask[0, 1] = 1
@@ -23,8 +23,8 @@ class MaskedLinearLayerTest(unittest.TestCase):
         # Arrange - initialize a masked layer and randomize its mask
         input_size = 5
         output_size = 7
-        layer = paddle.sparse.MaskedLinearLayer(input_size, output_size)
-        layer.apply(paddle.util.set_random_masks)
+        layer = pypaddle.sparse.MaskedLinearLayer(input_size, output_size)
+        layer.apply(pypaddle.util.set_random_masks)
         initial_state = np.copy(layer.mask)
 
         # Act - Now the mask should be reset to only ones
@@ -37,13 +37,13 @@ class MaskedLinearLayerTest(unittest.TestCase):
     def test_mask_changes_output_success(self):
         input_size = 5
         output_size = 7
-        layer = paddle.sparse.MaskedLinearLayer(input_size, output_size)
+        layer = pypaddle.sparse.MaskedLinearLayer(input_size, output_size)
         input = torch.rand(input_size)
 
-        layer.apply(paddle.util.set_random_masks)
+        layer.apply(pypaddle.util.set_random_masks)
         first_mask = np.copy(layer.mask)
         first_mask_output = layer(input).detach().numpy()
-        layer.apply(paddle.util.set_random_masks)
+        layer.apply(pypaddle.util.set_random_masks)
         second_mask = np.copy(layer.mask)
         second_mask_output = layer(input).detach().numpy()
 
@@ -53,7 +53,7 @@ class MaskedLinearLayerTest(unittest.TestCase):
     def test_random_input_success(self):
         input_size = 5
         output_size = 2
-        model = paddle.sparse.MaskedLinearLayer(input_size, output_size)
+        model = pypaddle.sparse.MaskedLinearLayer(input_size, output_size)
         input = torch.tensor(np.random.random(input_size))
 
         output = model(input)
