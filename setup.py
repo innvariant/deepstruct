@@ -21,7 +21,7 @@ setup(
     keywords=['sparse', 'neural', 'networks', 'graph theory', 'pytorch'],
     packages=find_packages(),
     license="GPL3 License",
-    install_requires=['pip', 'setuptools>=18.0'],
+    install_requires=['pip', 'setuptools>=18.0', 'pytorch>=1.3', 'networkx'],
     dependency_links=[],
     classifiers = [
         "Development Status :: 1 - Planning",
