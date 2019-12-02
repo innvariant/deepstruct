@@ -18,6 +18,11 @@ def get_cifar10_loaders(batch_size:int = 100, possible_dataset_roots = 'data/set
         torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
+    if type(possible_dataset_roots) is str:
+        possible_dataset_roots = [possible_dataset_roots]
+    assert type(possible_dataset_roots) is list
+    assert len(possible_dataset_roots) > 0
+
     selected_root = possible_dataset_roots[0]
     for possible_root in possible_dataset_roots:
         if os.path.exists(possible_root):
@@ -48,7 +53,7 @@ def get_mnist_loaders(batch_size:int = 100, possible_dataset_roots = 'data/set/m
     ])
 
     if type(possible_dataset_roots) is str:
-        dataset_roots = [possible_dataset_roots]
+        possible_dataset_roots = [possible_dataset_roots]
     assert type(possible_dataset_roots) is list
     assert len(possible_dataset_roots) > 0
 
