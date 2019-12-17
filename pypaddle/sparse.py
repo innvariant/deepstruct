@@ -217,23 +217,96 @@ class DeepCellDAN(nn.Module):
 
         self._structure = structure
         assert structure.num_layers > 0
+        self._num_classes = num_classes
+        self._input_channel_size = input_channel_size
 
         self._input_nodes = [n for n in structure.nodes if structure.in_degree(n) == 0]
         self._output_nodes = [n for n in structure.nodes if structure.out_degree(n) == 0]
         assert len(self._input_nodes) > 0, 'No input nodes in structure: len=%d' % len(self.input_nodes)
         assert len(self._output_nodes) > 0, 'No output nodes in structure: len=%d' % len(self.output_nodes)
 
+        # Each cell has to have output channel size of 1
+        # The input channel size of a cell is its in_degree
+        # Except for input nodes, then the channel size equals the input channel size
         self._node_cells = {
             node: cell_constructor(
                 is_input=node in self._input_nodes,
                 is_output=node in self._output_nodes,
                 in_degree=structure.in_degree(node),
                 out_degree=structure.out_degree(node),
-                layer=structure.get_layer(node)
+                layer=structure.get_layer(node),
+                input_channel_size=self._input_channel_size
             )
             for node in self._structure.nodes
         }
         self._nodes = nn.ModuleList(list(self._node_cells.values()))
+
+        self._output_channel_size = 100
+        self._last_convolution = nn.Conv2d(len(self._output_nodes), self._output_channel_size, (1, 1))
+        self._last_batch_norm = nn.BatchNorm2d(self._output_channel_size)
+        self._last_fc = nn.Linear(self._output_channel_size, self._num_classes)
+
+    def forward(self, input):
+        # input : [batch_size, input_channel_size, ?, ..], e.g. [100, 1, 28, 28] or [100, 3, 32, 32]
+
+        #x = input.flatten(start_dim=1)
+        # x: [batch_size, ?*?*..], e.g. [100, 784] or [100, 3072]
+
+        outputs = {input_node: self._node_cells[input_node](input) for input_node in self._input_nodes}
+        for node in nx.topological_sort(self._structure):
+            # Skip input nodes, as we already processed them
+            if node in self._input_nodes:
+                continue
+
+            # Collect all inputs of incoming edges and compute the maximum height and width (last two dimensions) of
+            # all possible shapes of those tensors
+            inputs_raw = []
+            max_h = 0
+            max_w = 0
+            for (u, v) in self._structure.in_edges(node):
+                inputs_raw.append(outputs[u])
+                max_h = max(max_h, outputs[u].shape[2])
+                max_w = max(max_w, outputs[u].shape[3])
+
+            input_stack = []
+            for cell_output in inputs_raw:
+                # input can be [batch_size, 1, 20?, 20?] or [batch_size, 1, 30?, 20?]
+                # it is then zero padded to [batch_size, 1, max(?), max(?)]
+                zero_padded_input = torch.zeros(cell_output.shape[0], cell_output.shape[1], max_h, max_w, device=cell_output.device)
+                zero_padded_input[:, :, :cell_output.shape[2], :cell_output.shape[3]] = cell_output
+                input_stack.append(zero_padded_input)
+            # The current input is then concatenated along the channel dimension to build up to
+            # current_input: [batch_size, #in_edges(node), max(?), max(?)]
+            current_input = torch.cat(input_stack, 1)
+
+            outputs[node] = self._node_cells[node](current_input)
+
+        # Same trick again: compute the maximum height- and width-dimension of all output tensors of nodes which are
+        # output nodes. We have to iterate through all of those nodes.
+        max_h = 0
+        max_w = 0
+        for output_node in self._output_nodes:
+            max_h = max(max_h, outputs[output_node].shape[2])
+            max_w = max(max_w, outputs[output_node].shape[3])
+
+        # Now we obtained the maximum width and height, so we can zero-pad all tensors to that dimension
+        final_output_stack = []
+        for output_node in self._output_nodes:
+            current_output = outputs[output_node]
+            # current_output can be [batch_size, 1, 20?, 20?] or [batch_size, 1, 30?, 20?]
+            # it is then zero padded to [batch_size, 1, max(?), max(?)]
+            zero_padded = torch.zeros(current_output.shape[0], current_output.shape[1], max_h, max_w, device=current_output.device)
+            zero_padded[:, :, :current_output.shape[2], :current_output.shape[3]] = current_output
+            final_output_stack.append(zero_padded)
+        final_output = torch.cat(final_output_stack, 1)  # which is now [batch_size, #output_nodes, max(?), max(?)]
+
+        # Now apply a last convolution to have a fixed output channel size
+        final_output = self._last_convolution(final_output)  # convolved down to [batch_size, self._output_channel_size, ?, ?]
+        final_output = self._last_batch_norm(final_output)  # [batch_size, self._output_channel_size, ?, ?]
+        # And apply pooling, so we know the exact number of final features for a linear classifier
+        final_output = torch.nn.functional.adaptive_avg_pool2d(final_output, (1, 1))  # [batch_size, self._output_channel_size, 1, 1]
+        final_output = final_output.view(final_output.size(0), -1)  # [batch_size, self._output_channel_size]
+        return self._last_fc(final_output)  # [batch_size, _num_classes]
 
 
 class MaskableModule(nn.Module):
