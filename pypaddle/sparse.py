@@ -498,6 +498,13 @@ class MaskedDeepFFN(MaskableModule):
         self.activation = nn.ReLU()
 
     def generate_structure(self, include_input=False, include_output=False):
+        """
+
+        :param include_input:
+        :param include_output:
+        :rtype : LayeredGraph
+        :return:
+        """
         structure = CachedLayeredGraph()
 
         def add_edges(structure, layer, offset_source):

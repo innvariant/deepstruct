@@ -12,6 +12,16 @@ class MaskedLinearLayerTest(unittest.TestCase):
         print(structure)
         # TODO
 
+    def test_generate_large_structure(self):
+        layers = [1000, 500, 500, 200, 100]
+        model = pypaddle.sparse.MaskedDeepFFN((1, 28, 28), 10, layers)
+        structure = model.generate_structure()
+
+        self.assertEqual(len(layers), structure.num_layers)
+        structure_layer_sizes = [structure.get_layer_size(l) for l in structure.layers]
+        for l1, l2 in zip(structure_layer_sizes, layers):
+            self.assertEqual(l1, l2, "Structure %s did not match definition %s" % (structure_layer_sizes, layers))
+
     def test_random_forward_possibly_on_gpu_success(self):
         device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 

@@ -9,6 +9,7 @@
 * bugfixes on generating structures from masks
 * added/modified data loader utilities for mnist/cifar (probably no official part and concern of this library tools)
 * fixed PyPi setup and tested installation routine
+* defined networkx and torch as dependencies in setup.py. Next will be to check if it can be shadowed by pytorch packages from conda channels
 
 ## 0.2
 * introduced LayeredGraph as a wrapper for directed graphs which provides access to its layered ordering
