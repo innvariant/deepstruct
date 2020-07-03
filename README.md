@@ -1,9 +1,23 @@
-# pyPaddle - Tools for Sparse Neural Networks
-**Paddle** is a working title for tools for experimenting with sparse structures of artificial neural networks.
+# pypaddle - tools for neural network graph topology analysis ![Tests](https://github.com/innvariant/pypaddle/workflows/Tests/badge.svg)  [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
+**pypaddle** is a working title for tools for experimenting with sparse structures of artificial neural networks.
 It fuses graph theory / network science and artificial neural networks.
 
 ## Installation
-From PyPi:
+Via *conda* in your *environment.yml* (recommended for reproducible experiments):
+```yaml
+name: exp01
+channels:
+- defaults
+dependencies:
+- pip>=20
+- pip:
+    - pypaddle>=0.4
+```
+
+Via *poetry* (**recommended** for projects) using PyPi:
+``poetry add pypaddle``
+
+Directly with *pip* from PyPi:
 ```bash
 pip install pypaddle
 ```

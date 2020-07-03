@@ -17,7 +17,7 @@
 
 ## Publishing
 ```bash
-python setup.py sdist
+poetry build
 twine upload dist/*
 ```
 - Create wheel files in *dist/*: ``poetry build``
