@@ -4,73 +4,11 @@ import torch
 import torch.nn as nn
 import networkx as nx
 import numpy as np
-import torchvision
 
 import pypaddle.pruning
 import pypaddle.sparse
 
 from torch.utils.data import SubsetRandomSampler
-
-
-def get_cifar10_loaders(batch_size:int = 100, possible_dataset_roots = 'data/set/cifar10'):
-    transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),
-        torchvision.transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
-
-    if type(possible_dataset_roots) is str:
-        possible_dataset_roots = [possible_dataset_roots]
-    assert type(possible_dataset_roots) is list
-    assert len(possible_dataset_roots) > 0
-
-    selected_root = possible_dataset_roots[0]
-    for possible_root in possible_dataset_roots:
-        if os.path.exists(possible_root):
-            selected_root = possible_root
-    if not os.path.exists(selected_root):
-        os.makedirs(selected_root)
-
-    train_set = torchvision.datasets.CIFAR10(root=selected_root, train=True, download=True, transform=transform)
-    test_set = torchvision.datasets.CIFAR10(root=selected_root, train=False, download=True, transform=transform)
-    n_training_samples = 20000
-    train_sampler = SubsetRandomSampler(np.arange(n_training_samples, dtype=np.int64))
-    n_val_samples = 5000
-    val_sampler = SubsetRandomSampler(np.arange(n_training_samples, n_training_samples + n_val_samples, dtype=np.int64))
-    n_test_samples = 5000
-    test_sampler = SubsetRandomSampler(np.arange(n_test_samples, dtype=np.int64))
-
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=train_sampler, num_workers=2)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, sampler=test_sampler, num_workers=2)
-    val_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, sampler=val_sampler, num_workers=2)
-
-    return train_loader, test_loader, val_loader, selected_root
-
-
-def get_mnist_loaders(batch_size:int = 100, possible_dataset_roots = 'data/set/mnist'):
-    custom_transform = torchvision.transforms.Compose([
-        torchvision.transforms.ToTensor(),  # first, convert image to PyTorch tensor
-        torchvision.transforms.Normalize((0.1307,), (0.3081,))  # normalize inputs
-    ])
-
-    if type(possible_dataset_roots) is str:
-        possible_dataset_roots = [possible_dataset_roots]
-    assert type(possible_dataset_roots) is list
-    assert len(possible_dataset_roots) > 0
-
-    selected_root = possible_dataset_roots[0]
-    for possible_root in possible_dataset_roots:
-        if os.path.exists(possible_root):
-            selected_root = possible_root
-    if not os.path.exists(selected_root):
-        os.makedirs(selected_root)
-
-    train_set = torchvision.datasets.MNIST(root=selected_root, download=True, train=True, transform=custom_transform)
-    test_set = torchvision.datasets.MNIST(root=selected_root, download=True, train=False, transform=custom_transform)
-
-    mnist_train_loader = torch.utils.data.DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=2)
-    mnist_test_loader = torch.utils.data.DataLoader(test_set, batch_size=batch_size, shuffle=True, num_workers=2)
-
-    return mnist_train_loader, mnist_test_loader, None, selected_root
 
 
 def build_layer_index(graph : nx.DiGraph, layer_index=None):

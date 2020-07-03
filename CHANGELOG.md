@@ -2,6 +2,11 @@
 
 # Development Version
 
+## 0.4
+* switched to poetry for dependency and build management
+* added integration tests
+* switched to pytest instead of unittest
+
 ## 0.3
 * added support to define input shape for MaskedDeepFFN and MaskedDeepDAN
 * changed parameter for recompute_mask(epsilon) to recompute_mask(theta) as it should denote a threshold

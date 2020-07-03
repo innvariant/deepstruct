@@ -1,11 +1,11 @@
 import torch
 
 
-def test(test_loader, model, device):
+def run_evaluation(test_loader, model, device):
     """
-    Test the model on the test data set provided by the test loader.
+    Test the model on the tests data set provided by the tests loader.
 
-    :param test_loader:     The provided test data set
+    :param test_loader:     The provided tests data set
     :param model:           The model that should be tested
     :return: The percentage of correctly classified samples from the data set.
     """

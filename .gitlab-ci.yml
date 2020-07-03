@@ -1,10 +1,39 @@
 image: continuumio/anaconda3:latest
 
-before_script:
-  - conda env create -f environment.yml
-  - source activate pypaddle
+cache:
+  key: "pypaddle-${CI_JOB_NAME}"
+  paths:
+    - .cache/pip
+    - .venv
 
-tests:
-  stage: test
+stages:
+  - stage-quality
+  - stage-tests
+
+.install-deps-template: &install-deps
+  before_script:
+    - pip install poetry
+    - poetry --version
+    - poetry config virtualenvs.in-project true
+    - poetry install -vv
+
+.test-template: &test
+  <<: *install-deps
+  stage: stage-tests
+  coverage: '/TOTAL.*\s(\d+\.\d+\%)/'
   script:
-    - python -m unittest discover -s test
+    - poetry run pytest tests/
+  artifacts:
+    paths:
+      - tests/logs
+    when: always
+    expire_in: 1 week
+
+# Test Jobs
+test-python3.6:
+  <<: *test
+  image: python:3.6
+
+test-python3.7:
+  <<: *test
+  image: python:3.7
