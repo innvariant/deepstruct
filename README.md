@@ -59,17 +59,3 @@ model = pypaddle.sparse.MaskedDeepFFN(784, 10, [100, 100])
 # .. train model
 model.generate_structure()  # a networkx graph
 ```
-
-
-# Development
-
-## Architecture
-
-## Project Structure
-- following [Hitchhikers Guide to Python](http://docs.python-guide.org/en/latest/writing/structure/)
-
-## Publishing
-```bash
-python setup.py sdist
-twine upload dist/*
-```
