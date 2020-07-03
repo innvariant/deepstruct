@@ -28,6 +28,18 @@ pip install --upgrade git+ssh://git@github.com:innvariant/pypaddle.git
 ```
 
 ## Sparse Neural Network implementations
+![Sparse Network Connectivity on Low-Level](doc/sparse-network.png)
+
+There is various evidence across empirical machine learning studies that the way artificial neural networks are structurally connected has a (minor?) influence on performance metrics such as the accuracy or probably even on more complex concepts such as adversarial robustness.
+What do we mean by "structure"?
+We define structure over graph theoretic properties given a computational graph with very restricted non-linearities.
+This includes all major neural network definitions and lets us study them from the perspective of their *representation* and their *structure*.
+In a probabilistic sense, one can interprete structure as a prior to the model and despite single-layered wide networks are universal function approximators we follow the hypothesis that given certain structural priors we can find models with better properties.
+
+**What's contained in pypaddle?**
+- ready-to-use models in pytorch for learning instances on common (supervised/unsupervised) datasets from which a structural analysis is possible
+- model-to-graph transformations for studying models from a graph-theoretic perspective
+
 Before considering implementations, one should have a look on possible representations of Sparse Neural Networks.
 In case of feed-forward neural networks (FFNs) the network can be represented as a list of weight matrices.
 Each weight matrix represents the connections from one layer to the next.
