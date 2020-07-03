@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+
 import pypaddle.sparse
 import pypaddle.util
 
@@ -47,7 +48,9 @@ def test_mask_changes_output_success():
     second_mask = np.copy(layer.mask)
     second_mask_output = layer(input).detach().numpy()
 
-    assert (first_mask != second_mask).any(), "Masks for inference should not equal, but are randomly generated."
+    assert (
+        first_mask != second_mask
+    ).any(), "Masks for inference should not equal, but are randomly generated."
     assert np.any(np.not_equal(first_mask_output, second_mask_output))
 
 

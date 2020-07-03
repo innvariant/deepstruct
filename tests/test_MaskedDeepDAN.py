@@ -1,7 +1,8 @@
 import numpy as np
-import pypaddle.util
-import pypaddle.sparse
+
 import networkx as nx
+import pypaddle.sparse
+import pypaddle.util
 
 
 def test_traversal():
@@ -27,8 +28,8 @@ def test_random_structures_success():
     new_model = pypaddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
 
     # Assert
-    #self.assertTrue(nx.algorithms.isomorphism.faster_could_be_isomorphic(structure, extracted_structure))
-    assert  nx.is_isomorphic(structure, extracted_structure)
+    # self.assertTrue(nx.algorithms.isomorphism.faster_could_be_isomorphic(structure, extracted_structure))
+    assert nx.is_isomorphic(structure, extracted_structure)
     assert nx.is_isomorphic(structure, new_model.generate_structure())
 
 
@@ -41,8 +42,10 @@ def test_random_structures_with_input_and_output_success():
     model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
 
     # Act
-    extracted_structure = model.generate_structure(include_input=True, include_output=True)
-    new_model = pypaddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
+    extracted_structure = model.generate_structure(
+        include_input=True, include_output=True
+    )
+    pypaddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
 
 
 def test_apply_mask_success():
@@ -59,8 +62,16 @@ def test_apply_mask_success():
     model.apply_mask()
 
     different = []
-    for layer, previous_weight in zip(pypaddle.sparse.maskable_layers(model), previous_weights):
-        different.append(not np.all(np.equal(np.array(previous_weight), np.array(layer.weight.detach().numpy()))))
+    for layer, previous_weight in zip(
+        pypaddle.sparse.maskable_layers(model), previous_weights
+    ):
+        different.append(
+            not np.all(
+                np.equal(
+                    np.array(previous_weight), np.array(layer.weight.detach().numpy())
+                )
+            )
+        )
     assert np.any(different)
 
 
@@ -74,13 +85,46 @@ def test_get_structure():
     block4_size = 2
     block5_size = 2
     block6_size = 10
-    block0 = np.arange(1, block0_size+1)
-    block1 = np.arange(block0_size+1, block0_size+block1_size+1)
-    block2 = np.arange(block0_size+block1_size+1, block0_size+block1_size+block2_size+1)
-    block3 = np.arange(block0_size+block1_size+block2_size+1, block0_size+block1_size+block2_size+block3_size+1)
-    block4 = np.arange(block0_size+block1_size+block2_size+block3_size+1, block0_size+block1_size+block2_size+block3_size+block4_size+1)
-    block5 = np.arange(block0_size+block1_size+block2_size+block3_size+block4_size+1, block0_size+block1_size+block2_size+block3_size+block4_size+block5_size+1)
-    block6 = np.arange(block0_size+block1_size+block2_size+block3_size+block4_size+block5_size+1, block0_size+block1_size+block2_size+block3_size+block4_size+block5_size+block6_size+1)
+    block0 = np.arange(1, block0_size + 1)
+    block1 = np.arange(block0_size + 1, block0_size + block1_size + 1)
+    block2 = np.arange(
+        block0_size + block1_size + 1, block0_size + block1_size + block2_size + 1
+    )
+    block3 = np.arange(
+        block0_size + block1_size + block2_size + 1,
+        block0_size + block1_size + block2_size + block3_size + 1,
+    )
+    block4 = np.arange(
+        block0_size + block1_size + block2_size + block3_size + 1,
+        block0_size + block1_size + block2_size + block3_size + block4_size + 1,
+    )
+    block5 = np.arange(
+        block0_size + block1_size + block2_size + block3_size + block4_size + 1,
+        block0_size
+        + block1_size
+        + block2_size
+        + block3_size
+        + block4_size
+        + block5_size
+        + 1,
+    )
+    block6 = np.arange(
+        block0_size
+        + block1_size
+        + block2_size
+        + block3_size
+        + block4_size
+        + block5_size
+        + 1,
+        block0_size
+        + block1_size
+        + block2_size
+        + block3_size
+        + block4_size
+        + block5_size
+        + block6_size
+        + 1,
+    )
 
     # First layer
     for v in block0:
@@ -136,13 +180,46 @@ def test_dev():
     block4_size = 30
     block5_size = 20
     block6_size = 20
-    block0 = np.arange(1, block0_size+1)
-    block1 = np.arange(block0_size+1, block0_size+block1_size+1)
-    block2 = np.arange(block0_size+block1_size+1, block0_size+block1_size+block2_size+1)
-    block3 = np.arange(block0_size+block1_size+block2_size+1, block0_size+block1_size+block2_size+block3_size+1)
-    block4 = np.arange(block0_size+block1_size+block2_size+block3_size+1, block0_size+block1_size+block2_size+block3_size+block4_size+1)
-    block5 = np.arange(block0_size+block1_size+block2_size+block3_size+block4_size+1, block0_size+block1_size+block2_size+block3_size+block4_size+block5_size+1)
-    block6 = np.arange(block0_size+block1_size+block2_size+block3_size+block4_size+block5_size+1, block0_size+block1_size+block2_size+block3_size+block4_size+block5_size+block6_size+1)
+    block0 = np.arange(1, block0_size + 1)
+    block1 = np.arange(block0_size + 1, block0_size + block1_size + 1)
+    block2 = np.arange(
+        block0_size + block1_size + 1, block0_size + block1_size + block2_size + 1
+    )
+    block3 = np.arange(
+        block0_size + block1_size + block2_size + 1,
+        block0_size + block1_size + block2_size + block3_size + 1,
+    )
+    block4 = np.arange(
+        block0_size + block1_size + block2_size + block3_size + 1,
+        block0_size + block1_size + block2_size + block3_size + block4_size + 1,
+    )
+    block5 = np.arange(
+        block0_size + block1_size + block2_size + block3_size + block4_size + 1,
+        block0_size
+        + block1_size
+        + block2_size
+        + block3_size
+        + block4_size
+        + block5_size
+        + 1,
+    )
+    block6 = np.arange(
+        block0_size
+        + block1_size
+        + block2_size
+        + block3_size
+        + block4_size
+        + block5_size
+        + 1,
+        block0_size
+        + block1_size
+        + block2_size
+        + block3_size
+        + block4_size
+        + block5_size
+        + block6_size
+        + 1,
+    )
 
     # First layer
     for v in block0:
@@ -172,4 +249,4 @@ def test_dev():
         for t in block6:
             structure.add_edge(v, t)
 
-    model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
+    pypaddle.sparse.MaskedDeepDAN(784, 10, structure)

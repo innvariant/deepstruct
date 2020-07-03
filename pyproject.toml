@@ -49,7 +49,7 @@ use_parentheses = true
 not_skip = "__init__.py"
 skip_glob = ["*/setup.py", "res/"]
 filter_files = true
-known_first_party = "pyklopp"
+known_first_party = "pypaddle"
 known_third_party = ["importlib_metadata", "importlib_resources", "pyfakefs", "pytest", "semantic_version", "torch" ]
 
 [tool.black]

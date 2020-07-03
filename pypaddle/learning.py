@@ -36,7 +36,6 @@ def train(train_loader, model, optimizer, criterion, device):
     :param percentage:      If the function should also calculate the percentage of right made decisions.
     :return: The average loss of the network in this epoch.
     """
-    total_step = len(train_loader)
     model.train()
     total_loss = 0
     correct = 0

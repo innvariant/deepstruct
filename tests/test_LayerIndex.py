@@ -1,5 +1,5 @@
-import pypaddle.util
 import networkx as nx
+import pypaddle.util
 
 
 def test_dev():
@@ -18,6 +18,6 @@ def test_dev():
     layer_index, vertex_by_layer = pypaddle.util.build_layer_index(structure)
 
     for n in nodes:
-        assert (n in layer_index)
-        assert (layer_index[n] in vertex_by_layer)
-        assert (n in vertex_by_layer[layer_index[n]])
+        assert n in layer_index
+        assert layer_index[n] in vertex_by_layer
+        assert n in vertex_by_layer[layer_index[n]]

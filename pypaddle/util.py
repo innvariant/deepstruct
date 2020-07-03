@@ -1,17 +1,16 @@
-import os
 import math
+import os
+
+import numpy as np
 import torch
 import torch.nn as nn
-import networkx as nx
-import numpy as np
 
+import networkx as nx
 import pypaddle.pruning
 import pypaddle.sparse
 
-from torch.utils.data import SubsetRandomSampler
 
-
-def build_layer_index(graph : nx.DiGraph, layer_index=None):
+def build_layer_index(graph: nx.DiGraph, layer_index=None):
     """
 
     :param graph:
@@ -22,20 +21,28 @@ def build_layer_index(graph : nx.DiGraph, layer_index=None):
     if layer_index is None:
         layer_index = {}
 
-    recursion_call = {'count': 0}
+    recursion_call = {"count": 0}
 
     def get_layer_index(vertex, graph):
         try:
             vertex = int(vertex)
         except TypeError:
-            raise ValueError('You have to pass vertex indices to this function.')
+            raise ValueError("You have to pass vertex indices to this function.")
         # print('get_layer_index(%s, roots, graph)' % vertex)
         if vertex is None:
-            raise ValueError('Given vertex was none.')
+            raise ValueError("Given vertex was none.")
         if vertex not in layer_index:
-            recursion_call['count'] += 1
-            layer_index[vertex] = max(
-                [get_layer_index(v, graph) for v in nx.algorithms.dag.ancestors(graph, vertex)] + [-1]) + 1
+            recursion_call["count"] += 1
+            layer_index[vertex] = (
+                max(
+                    [
+                        get_layer_index(v, graph)
+                        for v in nx.algorithms.dag.ancestors(graph, vertex)
+                    ]
+                    + [-1]
+                )
+                + 1
+            )
         return layer_index[vertex]
 
     for v in graph:
@@ -51,7 +58,6 @@ def build_layer_index(graph : nx.DiGraph, layer_index=None):
         vertices_by_layer[idx].append(v)
 
     return layer_index, vertices_by_layer
-
 
 
 """
@@ -79,22 +85,33 @@ def generate_hessian_inverse_fc(layer, hessian_inverse_path, layer_input_train_d
 
     dataset_size = 0
     for input_index, input_file in enumerate(os.listdir(layer_input_train_dir)):
-        layer2_input_train = np.load(layer_input_train_dir + '/' + input_file)
+        layer2_input_train = np.load(layer_input_train_dir + "/" + input_file)
 
         if input_index == 0:
-            dataset_size = layer2_input_train.shape[0] * len(os.listdir(layer_input_train_dir))
+            dataset_size = layer2_input_train.shape[0] * len(
+                os.listdir(layer_input_train_dir)
+            )
 
         for i in range(layer2_input_train.shape[0]):
             # vect_w_b = np.vstack((np.array([layer2_input_train[i]]).T, np.array([[1.0]])))
             vect_w = np.array([layer2_input_train[i]]).T
-            denominator = dataset_size + np.dot(np.dot(vect_w.T, hessian_inverse), vect_w)
-            numerator = np.dot(np.dot(hessian_inverse, vect_w), np.dot(vect_w.T, hessian_inverse))
+            denominator = dataset_size + np.dot(
+                np.dot(vect_w.T, hessian_inverse), vect_w
+            )
+            numerator = np.dot(
+                np.dot(hessian_inverse, vect_w), np.dot(vect_w.T, hessian_inverse)
+            )
             hessian_inverse = hessian_inverse - numerator * (1.00 / denominator)
 
     np.save(hessian_inverse_path, hessian_inverse)
 
 
-def edge_cut(layer, hessian_inverse_path, value, strategy=pypaddle.pruning.PruningStrategy.PERCENTAGE):
+def edge_cut(
+    layer,
+    hessian_inverse_path,
+    value,
+    strategy=pypaddle.pruning.PruningStrategy.PERCENTAGE,
+):
     """
     This function prune weights of biases based on given hessian inverse and cut ratio
     :param hessian_inverse_path:
@@ -124,12 +141,13 @@ def edge_cut(layer, hessian_inverse_path, value, strategy=pypaddle.pruning.Pruni
     elif strategy is pypaddle.pruning.PruningStrategy.BUCKET:
         max_pruned_num = value
     else:
-        raise ValueError('Currently not implemented')
+        raise ValueError("Currently not implemented")
 
     # Calculate sensitivity score. Refer to Eq.5.
     for i in range(n_hidden_2):
         sensitivity = np.hstack(
-            (sensitivity, 0.5 * ((w_layer.T[i] ** 2) / np.diag(hessian_inverse))))
+            (sensitivity, 0.5 * ((w_layer.T[i] ** 2) / np.diag(hessian_inverse)))
+        )
     sorted_index = np.argsort(sensitivity)
     hessian_inverseT = hessian_inverse.T
 
@@ -140,13 +158,17 @@ def edge_cut(layer, hessian_inverse_path, value, strategy=pypaddle.pruning.Pruni
         y_index = prune_index[0] % n_hidden_1  # this layer num
 
         if gate_w[y_index][x_index] == 1:
-            delta_w = (-w_layer[y_index][x_index] / hessian_inverse[y_index][y_index]) * hessian_inverseT[y_index]
+            delta_w = (
+                -w_layer[y_index][x_index] / hessian_inverse[y_index][y_index]
+            ) * hessian_inverseT[y_index]
             gate_w[y_index][x_index] = 0
 
             if strategy is strategy.PERCENTAGE:
                 prune_count += 1
             elif strategy is strategy.BUCKET:
-                prune_count += sensitivity[prune_index]  # todo: evaluate here probably a bit wrong :(
+                prune_count += sensitivity[
+                    prune_index
+                ]  # todo: evaluate here probably a bit wrong :(
 
             # Parameters update, refer to Eq.5
             w_layer.T[x_index] = w_layer.T[x_index] + delta_w
@@ -171,6 +193,7 @@ def edge_cut(layer, hessian_inverse_path, value, strategy=pypaddle.pruning.Pruni
 
 # -----------
 
+
 def find_network_threshold(network, value, strategy):
     all_sal = []
     for layer in pypaddle.sparse.prunable_layers(network):
@@ -180,7 +203,12 @@ def find_network_threshold(network, value, strategy):
 
         # zip, filter, unzip the two lists
         _, filtered_saliency = zip(
-            *((masked_val, weight_val) for masked_val, weight_val in zip(mask, saliency) if masked_val == 1))
+            *(
+                (masked_val, weight_val)
+                for masked_val, weight_val in zip(mask, saliency)
+                if masked_val == 1
+            )
+        )
         # add all saliencies to list
         all_sal += filtered_saliency
 
@@ -210,15 +238,16 @@ def find_network_threshold(network, value, strategy):
         return sorted_array[-1] + 1
 
 
-
 def set_random_saliency(network):
     # set saliency to random values
     for layer in pypaddle.sparse.prunable_layers(network):
         layer.set_saliency(torch.rand_like(layer.get_weight()) * layer.get_mask())
 
-def set_random_masks(module : nn.Module):
+
+def set_random_masks(module: nn.Module):
     if isinstance(module, pypaddle.sparse.MaskedLinearLayer):
         module.set_mask(torch.round(torch.rand_like(module.get_weight())))
+
 
 def set_distributed_saliency(network):
     # prune from each layer the according number of elements
@@ -235,7 +264,12 @@ def get_filtered_saliency(saliency, mask):
     m = list(mask)
 
     _, filtered_w = zip(
-        *((masked_val, weight_val) for masked_val, weight_val in zip(m, s) if masked_val == 1))
+        *(
+            (masked_val, weight_val)
+            for masked_val, weight_val in zip(m, s)
+            if masked_val == 1
+        )
+    )
     return filtered_w
 
 
@@ -253,7 +287,12 @@ def get_weight_distribution(network):
         weights = list(layer.get_weight().data.numpy().flatten())
 
         masked_val, filtered_weights = zip(
-            *((masked_val, weight_val) for masked_val, weight_val in zip(mask, weights) if masked_val == 1))
+            *(
+                (masked_val, weight_val)
+                for masked_val, weight_val in zip(mask, weights)
+                if masked_val == 1
+            )
+        )
 
         all_weights += list(filtered_weights)
 

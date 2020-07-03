@@ -1,9 +1,10 @@
 import math
+
+import numpy as np
 import torch
 import torch.nn as nn
-import networkx as nx
-import numpy as np
 
+import networkx as nx
 import pypaddle.deprecated
 import pypaddle.sparse
 import pypaddle.util
@@ -42,7 +43,9 @@ class ReductionCell(nn.Module):
     def __init__(self, input_channels, output_channels):
         super().__init__()
 
-        self.conv_reduce = nn.Conv2d(input_channels, output_channels, kernel_size=5, padding=2, stride=2)
+        self.conv_reduce = nn.Conv2d(
+            input_channels, output_channels, kernel_size=5, padding=2, stride=2
+        )
         self.act = nn.ReLU()
         self.batch_norm = nn.BatchNorm2d(output_channels)
 
@@ -62,14 +65,16 @@ def test_development():
     # Define a customized cell constructor
     # Each cell has to map [batch_size, in_degree, a, b] -> [batch_size, 1, x, y]
     # Except for input cells, they map [batch_size, input_channel_size, a, b] -> [batch_size, 1, x, y]
-    def my_cell_constructor(is_input, is_output, in_degree, out_degree, layer, input_channel_size):
+    def my_cell_constructor(
+        is_input, is_output, in_degree, out_degree, layer, input_channel_size
+    ):
         if is_input:
             return ReductionCell(input_channel_size, 1)
         else:
             return ReductionCell(in_degree, 1)
 
     # Generate a random directed acyclic network
-    #random_graph = nx.navigable_small_world_graph(200, 4, 5, 2)
+    # random_graph = nx.navigable_small_world_graph(200, 4, 5, 2)
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
     adj_matrix = nx.convert_matrix.to_numpy_array(random_graph)
     directed_graph = nx.convert_matrix.from_numpy_array(np.tril(adj_matrix))
@@ -82,15 +87,21 @@ def test_development():
     batch_size = 100
     input_channels = 3
     output_classes = 10
-    model = pypaddle.sparse.DeepCellDAN(output_classes, input_channels, my_cell_constructor, structure)
+    model = pypaddle.sparse.DeepCellDAN(
+        output_classes, input_channels, my_cell_constructor, structure
+    )
 
-    def count_parameters(model : torch.nn.Module):
+    def count_parameters(model: torch.nn.Module):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
-    random_input = torch.tensor(np.random.randn(batch_size, input_channels, 50, 50), dtype=torch.float32, device=device)
+    random_input = torch.tensor(
+        np.random.randn(batch_size, input_channels, 50, 50),
+        dtype=torch.float32,
+        device=device,
+    )
 
     # Act
     output = model(random_input)
