@@ -1,11 +1,15 @@
-import torch
 import os
+
+from enum import Enum
+
 import numpy as np
-import pypaddle.util
+import torch
+
+from torch.autograd import grad
+
 import pypaddle.learning
 import pypaddle.sparse
-from torch.autograd import grad
-from enum import Enum
+import pypaddle.util
 
 
 class PruneNeuralNetMethod:
@@ -65,8 +69,13 @@ class PruneNeuralNetMethod:
         Check if the current pruning method needs the network's loss as an argument.
         :return: True iff a gradient of the network is required.
         """
-        return self.prune_method in [optimal_brain_damage, optimal_brain_damage_absolute, optimal_brain_damage_bucket,
-                                     optimal_brain_surgeon_layer_wise, optimal_brain_surgeon_layer_wise_bucket]
+        return self.prune_method in [
+            optimal_brain_damage,
+            optimal_brain_damage_absolute,
+            optimal_brain_damage_bucket,
+            optimal_brain_surgeon_layer_wise,
+            optimal_brain_surgeon_layer_wise_bucket,
+        ]
 
     def require_retraining(self):
         """
@@ -81,6 +90,7 @@ class PruneNeuralNetMethod:
 #
 # Top-Down Pruning Approaches
 #
+
 
 def optimal_brain_damage(self, network, percentage):
     """
@@ -123,13 +133,20 @@ def optimal_brain_surgeon_layer_wise(self, network, percentage):
 
     # prune the elements from the matrix
     for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
-        pypaddle.util.edge_cut(layer, hessian_inverse_path + name + '.npy', value=percentage)
+        pypaddle.util.edge_cut(
+            layer, hessian_inverse_path + name + ".npy", value=percentage
+        )
 
 
 def optimal_brain_surgeon_layer_wise_bucket(self, network, bucket_size):
     hessian_inverse_path = calculate_obsl_saliency(self, network)
     for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
-        pypaddle.util.edge_cut(layer, hessian_inverse_path + name + '.npy', value=bucket_size, strategy=PruningStrategy.BUCKET)
+        pypaddle.util.edge_cut(
+            layer,
+            hessian_inverse_path + name + ".npy",
+            value=bucket_size,
+            strategy=PruningStrategy.BUCKET,
+        )
 
 
 #
@@ -208,6 +225,7 @@ class PruningStrategy(Enum):
     Enum to represent the different prunuing strategies that can be used.
     Note: not every pruning strategy can be used with every pruning method.
     """
+
     PERCENTAGE = 0
     ABSOLUTE = 1
     BUCKET = 2
@@ -242,7 +260,12 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
         mask = list(layer.get_mask().abs().numpy().flatten())
         saliency = list(layer.get_saliency().numpy().flatten())
         _, filtered_saliency = zip(
-            *((masked_val, weight_val) for masked_val, weight_val in zip(mask, saliency) if masked_val == 1))
+            *(
+                (masked_val, weight_val)
+                for masked_val, weight_val in zip(mask, saliency)
+                if masked_val == 1
+            )
+        )
 
         # calculate threshold
         # percentage pruning
@@ -252,7 +275,9 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
         elif strategy is PruningStrategy.ABSOLUTE:
             # due to floating point operations this is not 100 percent exact a few more or less weights might get
             # deleted
-            add_val = round((layer.get_weight_count() / pre_pruned_weight_count * value).item())
+            add_val = round(
+                (layer.get_weight_count() / pre_pruned_weight_count * value).item()
+            )
 
             # check if there are enough elements to prune select the highest element and add some penalty to it so the
             if add_val > layer.get_weight_count():
@@ -261,7 +286,7 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
                 index = np.argsort(np.array(filtered_saliency))[add_val]
                 th = np.array(filtered_saliency)[index].item()
         else:
-            raise ValueError('Action is not supported!!!')
+            raise ValueError("Action is not supported!!!")
 
         # set mask
         layer.set_mask(torch.ge(layer.get_saliency(), th).float() * layer.get_mask())
@@ -269,10 +294,14 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
 
 def calculate_obd_saliency(self, network):
     # the loss of the network on the cross validation set
-    loss = pypaddle.learning.cross_validation_error(self.valid_dataset, network, self.criterion)
+    loss = pypaddle.learning.cross_validation_error(
+        self.valid_dataset, network, self.criterion
+    )
 
     # calculate the first order gradients for all weights from the pruning layers.
-    weight_params = map(lambda x: x.get_weight(), pypaddle.sparse.prunable_layers(network))
+    weight_params = map(
+        lambda x: x.get_weight(), pypaddle.sparse.prunable_layers(network)
+    )
     loss_grads = grad(loss, weight_params, create_graph=True)
 
     # iterate over all layers and zip them with their corrosponding first gradient
@@ -300,20 +329,23 @@ def calculate_obd_saliency(self, network):
 
         # rearrange calculated value to their normal form and set saliency
         layer.set_saliency(
-            torch.tensor(all_grads).view(weight.size()) * layer.get_weight().data.pow(2) * 0.5)
+            torch.tensor(all_grads).view(weight.size())
+            * layer.get_weight().data.pow(2)
+            * 0.5
+        )
 
 
 def calculate_obsl_saliency(self, network):
-    out_dir = './out/hessian'
+    out_dir = "./out/hessian"
     if not os.path.exists(out_dir):
         os.mkdir(out_dir)
-        os.mkdir(out_dir + '/layerinput')
-        os.mkdir(out_dir + '/inverse')
+        os.mkdir(out_dir + "/layerinput")
+        os.mkdir(out_dir + "/inverse")
 
     # where to put the cached layer inputs
-    layer_input_path = out_dir + '/layerinput/'
+    layer_input_path = out_dir + "/layerinput/"
     # where to save the hessian matricies
-    hessian_inverse_path = out_dir + '/inverse/'
+    hessian_inverse_path = out_dir + "/inverse/"
 
     # generate the input in the layers and save it for every batch
     pypaddle.util.keep_input_layerwise(network)
@@ -323,15 +355,17 @@ def calculate_obsl_saliency(self, network):
         network(images)
         for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
             layer_input = layer.layer_input.data.numpy()
-            path = layer_input_path + name + '/'
+            path = layer_input_path + name + "/"
             if not os.path.exists(path):
                 os.mkdir(path)
 
-            np.save(path + 'layerinput-' + str(i), layer_input)
+            np.save(path + "layerinput-" + str(i), layer_input)
 
     # generate the hessian matrix for each layer
     for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
         hessian_inverse_location = hessian_inverse_path + name
-        pypaddle.util.generate_hessian_inverse_fc(layer, hessian_inverse_location, layer_input_path + name)
+        pypaddle.util.generate_hessian_inverse_fc(
+            layer, hessian_inverse_location, layer_input_path + name
+        )
 
     return hessian_inverse_path
