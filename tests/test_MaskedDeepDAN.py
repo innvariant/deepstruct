@@ -1,6 +1,7 @@
 import numpy as np
 
 import networkx as nx
+import pypaddle.graph
 import pypaddle.sparse
 import pypaddle.util
 
@@ -8,7 +9,7 @@ import pypaddle.util
 def test_traversal():
     # Arrange
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-    structure = pypaddle.sparse.CachedLayeredGraph()
+    structure = pypaddle.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
 
@@ -18,7 +19,7 @@ def test_traversal():
 def test_random_structures_success():
     # Arrange
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-    structure = pypaddle.sparse.CachedLayeredGraph()
+    structure = pypaddle.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
     model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
@@ -36,7 +37,7 @@ def test_random_structures_success():
 def test_random_structures_with_input_and_output_success():
     # Arrange
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-    structure = pypaddle.sparse.CachedLayeredGraph()
+    structure = pypaddle.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
     model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
@@ -50,7 +51,7 @@ def test_random_structures_with_input_and_output_success():
 
 def test_apply_mask_success():
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-    structure = pypaddle.sparse.CachedLayeredGraph()
+    structure = pypaddle.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
     model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
@@ -76,7 +77,7 @@ def test_apply_mask_success():
 
 
 def test_get_structure():
-    structure = pypaddle.sparse.CachedLayeredGraph()
+    structure = pypaddle.graph.CachedLayeredGraph()
 
     block0_size = 8
     block1_size = 8
@@ -170,7 +171,7 @@ def test_get_structure():
 
 
 def test_dev():
-    structure = pypaddle.sparse.CachedLayeredGraph()
+    structure = pypaddle.graph.CachedLayeredGraph()
     structure.add_nodes_from(np.arange(1, 7))
 
     block0_size = 50

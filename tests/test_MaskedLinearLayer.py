@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 
+import pypaddle.pruning
 import pypaddle.sparse
 import pypaddle.util
 
@@ -24,7 +25,7 @@ def test_parameter_reset_success():
     input_size = 5
     output_size = 7
     layer = pypaddle.sparse.MaskedLinearLayer(input_size, output_size)
-    layer.apply(pypaddle.util.set_random_masks)
+    layer.apply(pypaddle.pruning.set_random_masks)
     initial_state = np.copy(layer.mask)
 
     # Act - Now the mask should be reset to only ones
@@ -41,10 +42,10 @@ def test_mask_changes_output_success():
     layer = pypaddle.sparse.MaskedLinearLayer(input_size, output_size)
     input = torch.rand(input_size)
 
-    layer.apply(pypaddle.util.set_random_masks)
+    layer.apply(pypaddle.pruning.set_random_masks)
     first_mask = np.copy(layer.mask)
     first_mask_output = layer(input).detach().numpy()
-    layer.apply(pypaddle.util.set_random_masks)
+    layer.apply(pypaddle.pruning.set_random_masks)
     second_mask = np.copy(layer.mask)
     second_mask_output = layer(input).detach().numpy()
 

@@ -1,8 +1,20 @@
-# pypaddle - tools for neural network graph topology analysis ![Tests](https://github.com/innvariant/pypaddle/workflows/Tests/badge.svg)  [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
-**pypaddle** is a working title for tools for experimenting with sparse structures of artificial neural networks.
-It fuses graph theory / network science and artificial neural networks.
+# deepstruct - tools for neural network graph topology analysis ![Tests](https://github.com/innvariant/pypaddle/workflows/Tests/badge.svg)  [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
+Tools for fusing machine learning and graph theory.
+We are fascinated with the interplay of end-to-end learnable, locally restricted models and their graph theoretical properties.
+Searching for evidence of the structural prior hypothesis.
+Interested in pruning, neural architecture search or learning theory in general?
+
+**Note** we are currently renaming *pypaddle* to *deepstruct* due to naming collisions and better semantical wording.
 
 ## Installation
+Via *poetry* (**recommended** for projects) using PyPi:
+``poetry add pypaddle``
+
+Directly with *pip* from PyPi:
+```bash
+pip install pypaddle
+```
+
 Via *conda* in your *environment.yml* (recommended for reproducible experiments):
 ```yaml
 name: exp01
@@ -14,27 +26,39 @@ dependencies:
     - pypaddle>=0.4
 ```
 
-Via *poetry* (**recommended** for projects) using PyPi:
-``poetry add pypaddle``
-
-Directly with *pip* from PyPi:
-```bash
-pip install pypaddle
-```
-
 From public GitHub:
 ```bash
 pip install --upgrade git+ssh://git@github.com:innvariant/pypaddle.git
 ```
 
-## Sparse Neural Network implementations
-![Sparse Network Connectivity on Low-Level](doc/sparse-network.png)
+## Models
+- *pypaddle.sparse.MaskableModule*: pytorch modules that contain explicit masks to enforce (mostly zero-ordered) structure
+- *pypaddle.sparse.MaskedLinearLayer*: pytorch module with a simple linear layer extended with masking capability.
+Suitable if you want to have linear-layers on which to enforce masks which could be obtained through pruning, regularization or other other search techniques.
+- *pypaddle.sparse.MaskedDeepFFN*: feed-forward neural network with any width and depth and easy-to-use masks.
+Suitable for simple and canonical pruning research on zero-ordered structure
+- *pypaddle.sparse.MaskedDeepDAN*: feed-forward neural network with skip-layer connections based on any directed acyclic network.
+Suitable for arbitrary structures on zero-order and on that level most flexible but also computationally expensive.
+- *pypaddle.sparse.DeepCellDAN*: complex module based on a directed acyclic network and custom cells on third-order structures.
+Suitable for large-scale neural architecture search
+
+## What is the orders of structure?
+- zero-th order: weight-level
+- first order: kernel-level (filter, channel, blocks, cells)
+- second order: layers
 
 There is various evidence across empirical machine learning studies that the way artificial neural networks are structurally connected has a (minor?) influence on performance metrics such as the accuracy or probably even on more complex concepts such as adversarial robustness.
 What do we mean by "structure"?
 We define structure over graph theoretic properties given a computational graph with very restricted non-linearities.
 This includes all major neural network definitions and lets us study them from the perspective of their *representation* and their *structure*.
 In a probabilistic sense, one can interprete structure as a prior to the model and despite single-layered wide networks are universal function approximators we follow the hypothesis that given certain structural priors we can find models with better properties.
+
+
+
+## Sparse Neural Network implementations
+![Sparse Network Connectivity on zeroth order with a masked deep feed-forward neural network](doc/masked-deep-ffn.png)
+![Sparse Network Connectivity on zeroth order with a masked deep neural network with skip-layer connections](doc/masked-deep-dan.png)
+![Sparse Network Connectivity on second order with a masked deep cell-based neural network](doc/masked-deep-cell-dan.png)
 
 **What's contained in pypaddle?**
 - ready-to-use models in pytorch for learning instances on common (supervised/unsupervised) datasets from which a structural analysis is possible

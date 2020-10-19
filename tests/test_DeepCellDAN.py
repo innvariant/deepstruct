@@ -6,6 +6,7 @@ import torch.nn as nn
 
 import networkx as nx
 import pypaddle.deprecated
+import pypaddle.graph
 import pypaddle.sparse
 import pypaddle.util
 
@@ -80,7 +81,7 @@ def test_development():
     directed_graph = nx.convert_matrix.from_numpy_array(np.tril(adj_matrix))
 
     # Pass the random network to cached layered graph as a structural wrapper
-    structure = pypaddle.sparse.CachedLayeredGraph()
+    structure = pypaddle.graph.CachedLayeredGraph()
     structure.add_nodes_from(directed_graph.nodes)
     structure.add_edges_from(directed_graph.edges)
 

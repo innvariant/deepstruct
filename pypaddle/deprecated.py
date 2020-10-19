@@ -5,7 +5,7 @@ import torch.nn as nn
 
 from torch.nn import functional as F
 
-from pypaddle.sparse import LayeredGraph
+from pypaddle.graph import LayeredGraph
 from pypaddle.sparse import MaskedLinearLayer
 
 
