@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "pypaddle"
-version = "0.4.0"
+name = "deepstruct"
+version = "0.5.0"
 description = ""
 authors = [
     "Julian Stier <julian.stier@uni-passau.de>"
@@ -14,9 +14,9 @@ include = [
 
 readme = "README.md"
 
-homepage = "https://github.com/innvariant/pypaddle"
-repository = "https://github.com/innvariant/pypaddle"
-documentation = "https://github.com/innvariant/pypaddle"
+homepage = "https://github.com/innvariant/deepstruct"
+repository = "https://github.com/innvariant/deepstruct"
+documentation = "https://github.com/innvariant/deepstruct"
 
 keywords = ["neural network", "sparsity", "machine learning", "inference", "training"]
 
@@ -49,9 +49,9 @@ lines_between_types = 1
 multi_line_output = 3
 use_parentheses = true
 filter_files = true
-src_paths = ["pypaddle", "tests"]
+src_paths = ["deepstruct", "tests"]
 skip_glob = ["*/setup.py", "res/"]
-known_first_party = "pypaddle"
+known_first_party = "deepstruct"
 known_third_party = ["importlib_metadata", "importlib_resources", "pyfakefs", "pytest", "semantic_version", "torch" ]
 
 [tool.black]

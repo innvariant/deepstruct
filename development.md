@@ -5,7 +5,7 @@
 - mapping between network models and graphs
 
 **General**
-- [ ] describe architecture of pypaddle with flowcharts / visualizations
+- [ ] describe architecture of deepstruct with flowcharts / visualizations
 - [ ] organize and explain when to use which sparse model in application
 - [ ] describe idea of mapping between network model and graphs (we use networkx)
 
@@ -21,7 +21,7 @@ poetry build
 twine upload dist/*
 ```
 - Create wheel files in *dist/*: ``poetry build``
-- Install wheel in current environment with pip: ``pip install path/to/pyklopp/dist/pyklopp-0.1.0-py3-none-any.whl``
+- Install wheel in current environment with pip: ``pip install path/to/deepstruct/dist/deepstruct-0.1.0-py3-none-any.whl``
 
 ## Running CI image locally
 Install latest *gitlab-runner* (version 12.3 or up):

@@ -8,11 +8,11 @@ Interested in pruning, neural architecture search or learning theory in general?
 
 ## Installation
 Via *poetry* (**recommended** for projects) using PyPi:
-``poetry add pypaddle``
+``poetry add deepstruct``
 
 Directly with *pip* from PyPi:
 ```bash
-pip install pypaddle
+pip install deepstruct
 ```
 
 Via *conda* in your *environment.yml* (recommended for reproducible experiments):

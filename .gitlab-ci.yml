@@ -1,5 +1,5 @@
 cache:
-  key: "pypaddle-${CI_JOB_NAME}"
+  key: "deepstruct-${CI_JOB_NAME}"
   paths:
     - .cache/pip
     - .venv
