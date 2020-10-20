@@ -4,6 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from deepstruct.graph import CachedLayeredGraph
 from deepstruct.graph import LayeredGraph
 from deepstruct.sparse import MaskedDeepDAN
 from deepstruct.sparse import MaskedDeepFFN
@@ -140,8 +141,6 @@ class ScalableDAN(object):
 
 
 if __name__ == "__main__":
-    from deepstruct.graph import CachedLayeredGraph
-
     graph = CachedLayeredGraph()
     graph.add_edge(0, 3)
     graph.add_edge(0, 5)
