@@ -1,23 +1,19 @@
 import itertools
-import shutil
 
 import numpy as np
 import torch
 import torch.utils
 
-import pypaddle.sparse
+import deepstruct.sparse
 
-from pypaddle.learning import run_evaluation
-from pypaddle.learning import train
+from deepstruct.learning import run_evaluation
+from deepstruct.learning import train
 from tests.util import get_mnist_loaders
 
 
 def test_transfer_random_reconnected_structure():
-    possible_dataset_roots = ["/media/data/set/mnist", "data/set/mnist"]
     batch_size = 100
-    train_loader, test_loader, _, dataset_root = get_mnist_loaders(
-        batch_size, possible_dataset_roots
-    )
+    train_loader, test_loader, _, dataset_root = get_mnist_loaders(batch_size)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     feature, labels = iter(train_loader).next()
     input_shape = feature.shape[1:]
@@ -26,7 +22,7 @@ def test_transfer_random_reconnected_structure():
     loss = torch.nn.CrossEntropyLoss()
 
     num_epochs = 2
-    model = pypaddle.sparse.MaskedDeepFFN(input_shape, output_size, [100, 50, 20])
+    model = deepstruct.sparse.MaskedDeepFFN(input_shape, output_size, [100, 50, 20])
     model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
@@ -64,7 +60,7 @@ def test_transfer_random_reconnected_structure():
                 ]
             )
 
-    dan_model = pypaddle.sparse.MaskedDeepDAN(input_shape, output_size, structure)
+    dan_model = deepstruct.sparse.MaskedDeepDAN(input_shape, output_size, structure)
     dan_model.to(device)
     dan_optimizer = torch.optim.SGD(dan_model.parameters(), lr=0.01)
 
@@ -72,7 +68,3 @@ def test_transfer_random_reconnected_structure():
         train(train_loader, dan_model, dan_optimizer, loss, device)
 
     assert run_evaluation(test_loader, dan_model, device) > 1 / output_size
-
-    if dataset_root is not possible_dataset_roots[0]:
-        print("Deleting", dataset_root)
-        shutil.rmtree(dataset_root)

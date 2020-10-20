@@ -1,13 +1,14 @@
 import math
 
+import networkx as nx
 import numpy as np
 import torch
 import torch.nn as nn
 
-import networkx as nx
-import pypaddle.deprecated
-import pypaddle.sparse
-import pypaddle.util
+import deepstruct.deprecated
+import deepstruct.graph
+import deepstruct.sparse
+import deepstruct.util
 
 
 class Foo(nn.Module):
@@ -80,14 +81,14 @@ def test_development():
     directed_graph = nx.convert_matrix.from_numpy_array(np.tril(adj_matrix))
 
     # Pass the random network to cached layered graph as a structural wrapper
-    structure = pypaddle.sparse.CachedLayeredGraph()
+    structure = deepstruct.graph.CachedLayeredGraph()
     structure.add_nodes_from(directed_graph.nodes)
     structure.add_edges_from(directed_graph.edges)
 
     batch_size = 100
     input_channels = 3
     output_classes = 10
-    model = pypaddle.sparse.DeepCellDAN(
+    model = deepstruct.sparse.DeepCellDAN(
         output_classes, input_channels, my_cell_constructor, structure
     )
 

@@ -1,5 +1,7 @@
 import networkx as nx
-import pypaddle.util
+
+import deepstruct.graph
+import deepstruct.util
 
 
 def test_dev():
@@ -15,7 +17,7 @@ def test_dev():
     structure.add_edge(3, 5)
     structure.add_edge(4, 5)
 
-    layer_index, vertex_by_layer = pypaddle.util.build_layer_index(structure)
+    layer_index, vertex_by_layer = deepstruct.graph.build_layer_index(structure)
 
     for n in nodes:
         assert n in layer_index

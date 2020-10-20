@@ -1,6 +1,9 @@
-# Changelog for pypaddle
+# Changelog for deepstruct
 
-# Development Version
+## 0.5
+* new feature: concept of scalable families which is a first notion of *graph themes* analysis
+* file restructuring for better semantics
+* pypaddle will be renamed to deepstruct
 
 ## 0.4
 * switched to poetry for dependency and build management
