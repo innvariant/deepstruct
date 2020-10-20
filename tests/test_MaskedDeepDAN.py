@@ -1,6 +1,6 @@
+import networkx as nx
 import numpy as np
 
-import networkx as nx
 import pypaddle.graph
 import pypaddle.sparse
 import pypaddle.util

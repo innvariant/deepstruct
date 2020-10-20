@@ -372,7 +372,10 @@ def calculate_obsl_saliency(self, network):
 
 
 def edge_cut(
-    layer, hessian_inverse_path, value, strategy=PruningStrategy.PERCENTAGE,
+    layer,
+    hessian_inverse_path,
+    value,
+    strategy=PruningStrategy.PERCENTAGE,
 ):
     """
     This function prune weights of biases based on given hessian inverse and cut ratio

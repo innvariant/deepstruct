@@ -1,10 +1,10 @@
 import math
 
+import networkx as nx
 import numpy as np
 import torch
 import torch.nn as nn
 
-import networkx as nx
 import pypaddle.deprecated
 import pypaddle.graph
 import pypaddle.sparse

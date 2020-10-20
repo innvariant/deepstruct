@@ -4,8 +4,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-import networkx as nx
-
 from pypaddle.graph import LayeredGraph
 from pypaddle.sparse import MaskedDeepDAN
 from pypaddle.sparse import MaskedDeepFFN
@@ -142,8 +140,6 @@ class ScalableDAN(object):
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
-    from networkx.drawing.nx_agraph import graphviz_layout
     from pypaddle.graph import CachedLayeredGraph
 
     graph = CachedLayeredGraph()
@@ -172,16 +168,10 @@ if __name__ == "__main__":
     fam = ScalableDAN(graph, props)
     model = fam.build(8, 4, 1000)
     print(model)
-    for l in model.layers_main_hidden:
-        print(l)
-        print(torch.sum(l.mask) / np.prod(l.mask.shape))
+    for lay in model.layers_main_hidden:
+        print(lay)
+        print(torch.sum(lay.mask) / np.prod(lay.mask.shape))
 
-    for l in model.layers_skip_hidden:
-        print(l)
-        print(torch.sum(l.mask) / np.prod(l.mask.shape))
-
-    graph_scaled = fam.grow(100)
-    print(graph_scaled.edges)
-    pos = graphviz_layout(graph_scaled, prog="dot")
-    nx.draw(graph_scaled, pos, with_labels=False, arrows=False)
-    plt.show()
+    for lay in model.layers_skip_hidden:
+        print(lay)
+        print(torch.sum(lay.mask) / np.prod(lay.mask.shape))

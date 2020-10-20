@@ -18,7 +18,7 @@ def test_generate_large_structure():
     structure = model.generate_structure()
 
     assert len(layers) == structure.num_layers
-    structure_layer_sizes = [structure.get_layer_size(l) for l in structure.layers]
+    structure_layer_sizes = [structure.get_layer_size(lay) for lay in structure.layers]
     for l1, l2 in zip(structure_layer_sizes, layers):
         assert l1 == l2, "Structure %s did not match definition %s" % (
             structure_layer_sizes,

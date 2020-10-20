@@ -1,11 +1,10 @@
+import networkx as nx
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.autograd import Variable
-
-import networkx as nx
 
 from pypaddle.graph import CachedLayeredGraph
 from pypaddle.graph import LayeredGraph
@@ -178,9 +177,10 @@ class MaskedDeepDAN(MaskableModule):
         self.layers_main_hidden = nn.ModuleList(
             [
                 MaskedLinearLayer(
-                    structure.get_layer_size(l - 1), structure.get_layer_size(l)
+                    structure.get_layer_size(cur_lay - 1),
+                    structure.get_layer_size(cur_lay),
                 )
-                for l in structure.layers[1:]
+                for cur_lay in structure.layers[1:]
             ]
         )
 
@@ -398,8 +398,8 @@ class MaskedDeepFFN(MaskableModule):
         self.layer_first = MaskedLinearLayer(input_size, hidden_layers[0])
         self.layers_hidden = nn.ModuleList(
             [
-                MaskedLinearLayer(hidden_layers[l], h)
-                for l, h in enumerate(hidden_layers[1:])
+                MaskedLinearLayer(hidden_layers[lay], hid)
+                for lay, hid in enumerate(hidden_layers[1:])
             ]
         )
         self.layer_out = MaskedLinearLayer(hidden_layers[-1], num_classes)

@@ -1,4 +1,5 @@
 import networkx as nx
+
 import pypaddle.graph
 import pypaddle.util
 
