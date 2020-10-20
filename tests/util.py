@@ -4,7 +4,7 @@ import torch
 import torchvision
 
 
-def get_mnist_loaders(batch_size: int = 100, possible_dataset_roots="data/set/mnist"):
+def get_mnist_loaders(batch_size: int = 100, possible_dataset_roots="cache/data/mnist"):
     custom_transform = torchvision.transforms.Compose(
         [
             torchvision.transforms.ToTensor(),  # first, convert image to PyTorch tensor

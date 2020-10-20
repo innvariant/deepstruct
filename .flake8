@@ -16,3 +16,4 @@ exclude =
     .vscode
     .github
     res
+    tests/cache/

@@ -1,6 +1,7 @@
 # Temporary files
 __pycache__/
 *~
+tests/cache/
 
 # Build files and directories
 .venv/
