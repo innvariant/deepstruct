@@ -1,7 +1,5 @@
 # Changelog for deepstruct
 
-# Development Version
-
 ## 0.5
 * new feature: concept of scalable families which is a first notion of *graph themes* analysis
 * file restructuring for better semantics
