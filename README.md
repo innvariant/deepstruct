@@ -23,7 +23,7 @@ channels:
 dependencies:
 - pip>=20
 - pip:
-    - pypaddle>=0.4
+    - deepstruct
 ```
 
 From public GitHub:

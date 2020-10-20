@@ -4,10 +4,10 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from pypaddle.graph import LayeredGraph
-from pypaddle.sparse import MaskedDeepDAN
-from pypaddle.sparse import MaskedDeepFFN
-from pypaddle.util import kullback_leibler
+from deepstruct.graph import LayeredGraph
+from deepstruct.sparse import MaskedDeepDAN
+from deepstruct.sparse import MaskedDeepFFN
+from deepstruct.util import kullback_leibler
 
 
 class ScalableFamily(object):
@@ -140,7 +140,7 @@ class ScalableDAN(object):
 
 
 if __name__ == "__main__":
-    from pypaddle.graph import CachedLayeredGraph
+    from deepstruct.graph import CachedLayeredGraph
 
     graph = CachedLayeredGraph()
     graph.add_edge(0, 3)

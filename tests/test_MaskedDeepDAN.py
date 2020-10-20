@@ -1,15 +1,15 @@
 import networkx as nx
 import numpy as np
 
-import pypaddle.graph
-import pypaddle.sparse
-import pypaddle.util
+import deepstruct.graph
+import deepstruct.sparse
+import deepstruct.util
 
 
 def test_traversal():
     # Arrange
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-    structure = pypaddle.graph.CachedLayeredGraph()
+    structure = deepstruct.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
 
@@ -19,14 +19,14 @@ def test_traversal():
 def test_random_structures_success():
     # Arrange
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-    structure = pypaddle.graph.CachedLayeredGraph()
+    structure = deepstruct.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
-    model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
+    model = deepstruct.sparse.MaskedDeepDAN(784, 10, structure)
 
     # Act
     extracted_structure = model.generate_structure()
-    new_model = pypaddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
+    new_model = deepstruct.sparse.MaskedDeepDAN(784, 10, extracted_structure)
 
     # Assert
     # self.assertTrue(nx.algorithms.isomorphism.faster_could_be_isomorphic(structure, extracted_structure))
@@ -37,34 +37,34 @@ def test_random_structures_success():
 def test_random_structures_with_input_and_output_success():
     # Arrange
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-    structure = pypaddle.graph.CachedLayeredGraph()
+    structure = deepstruct.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
-    model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
+    model = deepstruct.sparse.MaskedDeepDAN(784, 10, structure)
 
     # Act
     extracted_structure = model.generate_structure(
         include_input=True, include_output=True
     )
-    pypaddle.sparse.MaskedDeepDAN(784, 10, extracted_structure)
+    deepstruct.sparse.MaskedDeepDAN(784, 10, extracted_structure)
 
 
 def test_apply_mask_success():
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
-    structure = pypaddle.graph.CachedLayeredGraph()
+    structure = deepstruct.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
-    model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
+    model = deepstruct.sparse.MaskedDeepDAN(784, 10, structure)
 
     previous_weights = []
-    for layer in pypaddle.sparse.maskable_layers(model):
+    for layer in deepstruct.sparse.maskable_layers(model):
         previous_weights.append(np.copy(layer.weight.detach().numpy()))
 
     model.apply_mask()
 
     different = []
     for layer, previous_weight in zip(
-        pypaddle.sparse.maskable_layers(model), previous_weights
+        deepstruct.sparse.maskable_layers(model), previous_weights
     ):
         different.append(
             not np.all(
@@ -77,7 +77,7 @@ def test_apply_mask_success():
 
 
 def test_get_structure():
-    structure = pypaddle.graph.CachedLayeredGraph()
+    structure = deepstruct.graph.CachedLayeredGraph()
 
     block0_size = 8
     block1_size = 8
@@ -161,17 +161,17 @@ def test_get_structure():
         for t in block6:
             structure.add_edge(v, t)
 
-    model = pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
+    model = deepstruct.sparse.MaskedDeepDAN(784, 10, structure)
     print(model)
 
     new_structure = model.generate_structure(include_input=False, include_output=False)
 
-    model2 = pypaddle.sparse.MaskedDeepDAN(784, 10, new_structure)
+    model2 = deepstruct.sparse.MaskedDeepDAN(784, 10, new_structure)
     print(model2)
 
 
 def test_dev():
-    structure = pypaddle.graph.CachedLayeredGraph()
+    structure = deepstruct.graph.CachedLayeredGraph()
     structure.add_nodes_from(np.arange(1, 7))
 
     block0_size = 50
@@ -250,4 +250,4 @@ def test_dev():
         for t in block6:
             structure.add_edge(v, t)
 
-    pypaddle.sparse.MaskedDeepDAN(784, 10, structure)
+    deepstruct.sparse.MaskedDeepDAN(784, 10, structure)

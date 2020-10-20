@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 
-import pypaddle.sparse
+import deepstruct.sparse
 
 
 def generate_hessian_inverse_fc(layer, hessian_inverse_path, layer_input_train_dir):
@@ -60,14 +60,14 @@ def get_filtered_saliency(saliency, mask):
 
 def get_layer_count(network):
     i = 0
-    for _ in pypaddle.sparse.prunable_layers_with_name(network):
+    for _ in deepstruct.sparse.prunable_layers_with_name(network):
         i += 1
     return i
 
 
 def get_weight_distribution(network):
     all_weights = []
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         mask = list(layer.get_mask().numpy().flatten())
         weights = list(layer.get_weight().data.numpy().flatten())
 

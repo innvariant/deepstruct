@@ -1,10 +1,10 @@
 import numpy as np
 
-import pypaddle.graph
+import deepstruct.graph
 
 
 def test_cached_layered_graph_default_success():
-    layered_graph = pypaddle.graph.CachedLayeredGraph()
+    layered_graph = deepstruct.graph.CachedLayeredGraph()
 
     layered_graph.add_nodes_from(np.arange(1, 7))
 

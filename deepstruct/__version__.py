@@ -1,4 +1,4 @@
 from importlib_metadata import version
 
 
-__version__ = version("pypaddle")
+__version__ = version("deepstruct")

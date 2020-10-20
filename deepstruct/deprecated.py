@@ -5,8 +5,8 @@ import torch.nn as nn
 
 from torch.nn import functional as F
 
-from pypaddle.graph import LayeredGraph
-from pypaddle.sparse import MaskedLinearLayer
+from deepstruct.graph import LayeredGraph
+from deepstruct.sparse import MaskedLinearLayer
 
 
 class LinearBlockUnit(nn.Module):

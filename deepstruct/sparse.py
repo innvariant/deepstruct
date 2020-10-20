@@ -6,8 +6,8 @@ import torch.nn.functional as F
 
 from torch.autograd import Variable
 
-from pypaddle.graph import CachedLayeredGraph
-from pypaddle.graph import LayeredGraph
+from deepstruct.graph import CachedLayeredGraph
+from deepstruct.graph import LayeredGraph
 
 
 class DeepCellDAN(nn.Module):

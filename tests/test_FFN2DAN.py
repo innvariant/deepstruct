@@ -1,13 +1,13 @@
 import itertools
 
 import numpy as np
-import pypaddle.sparse
 import torch
 import torch.utils
 
-from pypaddle.learning import run_evaluation
-from pypaddle.learning import train
+import deepstruct.sparse
 
+from deepstruct.learning import run_evaluation
+from deepstruct.learning import train
 from tests.util import get_mnist_loaders
 
 
@@ -22,7 +22,7 @@ def test_transfer_random_reconnected_structure():
     loss = torch.nn.CrossEntropyLoss()
 
     num_epochs = 2
-    model = pypaddle.sparse.MaskedDeepFFN(input_shape, output_size, [100, 50, 20])
+    model = deepstruct.sparse.MaskedDeepFFN(input_shape, output_size, [100, 50, 20])
     model.to(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
@@ -60,7 +60,7 @@ def test_transfer_random_reconnected_structure():
                 ]
             )
 
-    dan_model = pypaddle.sparse.MaskedDeepDAN(input_shape, output_size, structure)
+    dan_model = deepstruct.sparse.MaskedDeepDAN(input_shape, output_size, structure)
     dan_model.to(device)
     dan_optimizer = torch.optim.SGD(dan_model.parameters(), lr=0.01)
 

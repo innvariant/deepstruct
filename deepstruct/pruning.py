@@ -9,9 +9,9 @@ import torch.nn as nn
 
 from torch.autograd import grad
 
-import pypaddle.learning
-import pypaddle.sparse
-import pypaddle.util
+import deepstruct.learning
+import deepstruct.sparse
+import deepstruct.util
 
 
 class PruneNeuralNetMethod:
@@ -134,13 +134,13 @@ def optimal_brain_surgeon_layer_wise(self, network, percentage):
     hessian_inverse_path = calculate_obsl_saliency(self, network)
 
     # prune the elements from the matrix
-    for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
+    for name, layer in deepstruct.sparse.prunable_layers_with_name(network):
         edge_cut(layer, hessian_inverse_path + name + ".npy", value=percentage)
 
 
 def optimal_brain_surgeon_layer_wise_bucket(self, network, bucket_size):
     hessian_inverse_path = calculate_obsl_saliency(self, network)
-    for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
+    for name, layer in deepstruct.sparse.prunable_layers_with_name(network):
         edge_cut(
             layer,
             hessian_inverse_path + name + ".npy",
@@ -247,7 +247,7 @@ def prune_network_by_saliency(network, value, strategy=PruningStrategy.PERCENTAG
     th = find_network_threshold(network, value, strategy=strategy)
 
     # set the mask
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         # All deleted weights should be set to zero so they should definetly be less than the threshold since this is
         # positive.
         layer.set_mask(torch.ge(layer.get_saliency(), th).float() * layer.get_mask())
@@ -256,7 +256,7 @@ def prune_network_by_saliency(network, value, strategy=PruningStrategy.PERCENTAG
 def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE):
     pre_pruned_weight_count = get_network_weight_count(network).item()
 
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         mask = list(layer.get_mask().abs().numpy().flatten())
         saliency = list(layer.get_saliency().numpy().flatten())
         _, filtered_saliency = zip(
@@ -294,18 +294,18 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
 
 def calculate_obd_saliency(self, network):
     # the loss of the network on the cross validation set
-    loss = pypaddle.learning.cross_validation_error(
+    loss = deepstruct.learning.cross_validation_error(
         self.valid_dataset, network, self.criterion
     )
 
     # calculate the first order gradients for all weights from the pruning layers.
     weight_params = map(
-        lambda x: x.get_weight(), pypaddle.sparse.prunable_layers(network)
+        lambda x: x.get_weight(), deepstruct.sparse.prunable_layers(network)
     )
     loss_grads = grad(loss, weight_params, create_graph=True)
 
     # iterate over all layers and zip them with their corrosponding first gradient
-    for grd, layer in zip(loss_grads, pypaddle.sparse.prunable_layers(network)):
+    for grd, layer in zip(loss_grads, deepstruct.sparse.prunable_layers(network)):
         all_grads = []
         mask = layer.get_mask().view(-1)
         weight = layer.get_weight()
@@ -353,7 +353,7 @@ def calculate_obsl_saliency(self, network):
     for i, (images, labels) in enumerate(self.valid_dataset):
         images = images.reshape(-1, 28 * 28)
         network(images)
-        for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
+        for name, layer in deepstruct.sparse.prunable_layers_with_name(network):
             layer_input = layer.layer_input.data.numpy()
             path = layer_input_path + name + "/"
             if not os.path.exists(path):
@@ -362,9 +362,9 @@ def calculate_obsl_saliency(self, network):
             np.save(path + "layerinput-" + str(i), layer_input)
 
     # generate the hessian matrix for each layer
-    for name, layer in pypaddle.sparse.prunable_layers_with_name(network):
+    for name, layer in deepstruct.sparse.prunable_layers_with_name(network):
         hessian_inverse_location = hessian_inverse_path + name
-        pypaddle.util.generate_hessian_inverse_fc(
+        deepstruct.util.generate_hessian_inverse_fc(
             layer, hessian_inverse_location, layer_input_path + name
         )
 
@@ -458,7 +458,7 @@ def edge_cut(
 
 def find_network_threshold(network, value, strategy):
     all_sal = []
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         # flatten both weights and mask
         mask = list(layer.get_mask().abs().numpy().flatten())
         saliency = list(layer.get_saliency().numpy().flatten())
@@ -502,18 +502,18 @@ def find_network_threshold(network, value, strategy):
 
 def set_random_saliency(network):
     # set saliency to random values
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         layer.set_saliency(torch.rand_like(layer.get_weight()) * layer.get_mask())
 
 
 def set_random_masks(module: nn.Module):
-    if isinstance(module, pypaddle.sparse.MaskedLinearLayer):
+    if isinstance(module, deepstruct.sparse.MaskedLinearLayer):
         module.set_mask(torch.round(torch.rand_like(module.get_weight())))
 
 
 def set_distributed_saliency(network):
     # prune from each layer the according number of elements
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         # calculate standard deviation for the layer
         w = layer.get_weight().data
         st_v = 1 / w.std()
@@ -522,17 +522,17 @@ def set_distributed_saliency(network):
 
 
 def reset_pruned_network(network):
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         layer.reset_parameters(keep_mask=True)
 
 
 def keep_input_layerwise(network):
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         layer.keep_layer_input = True
 
 
 def get_network_weight_count(network):
     total_weights = 0
-    for layer in pypaddle.sparse.prunable_layers(network):
+    for layer in deepstruct.sparse.prunable_layers(network):
         total_weights += layer.get_weight_count()
     return total_weights
