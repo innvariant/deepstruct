@@ -109,3 +109,45 @@ model = deepstruct.sparse.MaskedDeepFFN(784, 10, [100, 100])
 # .. train model
 model.generate_structure()  # a networkx graph
 ```
+
+
+# Artificial PyTorch Datasets
+![A custom artificial landscape Stier2020B for testing function approximation](doc/artificial-landscape-approximation.png)
+We provide some simple utilities for supporting the quite fascinating area of artificial function approximation.
+Like polynomials, neural networks are universal function approximators on bounded intervals of compact spaces.
+To test, you can easily define a function of any finite dimension:
+```python
+import numpy as np
+import torch.utils.data
+from deepstruct.dataset import FuncDataset
+
+# Our artificial landscape: f: R^2 -> R
+# Have a look at https://github.com/innvariant/eddy for some visual examples
+# You could easily define arbitrary functions from R^a to R^b
+stier2020B1d = lambda x, y: 20 + x - 1.8*(y-5) + 3 * np.sin(x + 2 * y) * y + (x / 4) ** 4 + (y / 4) ** 4
+ds_input_shape = (2,)  # specify the number of input dimensions (usually a one-sized tensor if no further structures are used)
+# Explicitly define the target function for the dataset which returns a numpy array of our above function
+# By above definition x is two-dimensional, so you have access to x[0] and x[1]
+fn_target = lambda x: np.array([stier2020B1d(x[0], x[1])])
+# Define a sampling strategy for the dataset, e.g. uniform sampling the space
+fn_sampler = lambda: np.random.uniform(-2, 2, size=ds_input_shape)
+# Define the dataset given the target function and your sampling strategy
+# This simply wraps your function into a pytorch dataset and provides you with discrete observations
+# Your model will later only know those observations to come up with an approximate solution of your target
+ds_train = FuncDataset(fn_target, shape_input=ds_input_shape, size=500)
+
+# Calculate the output shape given our target function .. usually simply a (1,)-dimensional output
+ds_output_shape = fn_target(fn_sampler()).shape
+
+# As usual in pytorch, you can simply wrap your dataset with a loading strategy ..
+# This ensures e.g. that you do not iterate over your observations in the exact same manner
+# In case you sample first 100 examples of a binary classification dataset with label 1 and then another
+# 100 with label 2 it might impact your training .. so this ensures you have an e.g. random sampling strategy over the dataset
+batch_size = 100
+train_sampler = torch.utils.data.SubsetRandomSampler(np.arange(len(ds_train), dtype=np.int64))
+train_loader = torch.utils.data.DataLoader(ds_train, batch_size=batch_size, sampler=train_sampler, num_workers=2)
+
+# Iterate over your training set
+for feat, target in train_loader:
+    print(feat, target)
+```
