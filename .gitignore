@@ -10,7 +10,7 @@ build/
 *.c
 *.so
 dist/
-pypaddle.egg*
+deepstruct.egg*
 
 # Log-directories
 tensorboard/
