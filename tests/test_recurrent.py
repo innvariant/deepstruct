@@ -33,3 +33,57 @@ def test_recurrent_simple():
 
     # Assert
     assert output.numel() == batch_size * hidden_size
+
+
+def test_recurrent_unusual_activation():
+    # Arrange
+    batch_size = 15
+    input_size = 20
+    hidden_size = 30
+    model = deepstruct.recurrent.MaskedRecurrentLayer(
+        input_size, hidden_size=hidden_size, nonlinearity=torch.nn.LogSigmoid()
+    )
+    random_input = torch.tensor(
+        np.random.random((batch_size, input_size)),
+        dtype=torch.float32,
+        requires_grad=False,
+    )
+
+    # Act
+    hidden_state = torch.tensor(
+        np.random.random((batch_size, hidden_size)),
+        dtype=torch.float32,
+        requires_grad=False,
+    )
+    output = model(random_input, hidden_state)
+
+    # Assert
+    assert output.numel() == batch_size * hidden_size
+
+
+def test_deep_recurrent_simple():
+    print("TODO In work")
+    return
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    # Arrange
+    batch_size = 15
+    input_size = 20
+    # hidden_size = 30
+    model = deepstruct.recurrent.MaskedDeepRNN(input_size, hidden_layers=[100, 100])
+    model.to(device)
+    random_input = torch.tensor(
+        np.random.random((batch_size, input_size)),
+        dtype=torch.float32,
+        device=device,
+        requires_grad=False,
+    )
+
+    # Act
+    """hidden_state = torch.tensor(
+        np.random.random((batch_size, hidden_size)),
+        dtype=torch.float32,
+        device=device,
+        requires_grad=False,
+    )"""
+    model(random_input)

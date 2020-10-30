@@ -2,11 +2,10 @@ import math
 
 import torch
 import torch.nn as nn
+
 from torch.autograd import Variable
 from torch.nn import Parameter
 from torch.nn import init
-
-_rnn_activations = {"tanh": torch.tanh, "relu": torch.relu}
 
 
 class BaseLayerModule(nn.Module):
@@ -43,12 +42,7 @@ class BaseMaskModule(nn.Module):
                 layer.set_h2h_mask(masks[lay_idx][-1])
 
     def __get_masks(self, threshold, i2h, h2h):
-        if i2h and h2h:
-            key = ""
-        elif i2h:
-            key = "ih"
-        elif h2h:
-            key = "hh"
+        key = "" if i2h and h2h else "ih" if i2h else "hh" if h2h else None
 
         masks = {}
         for lay_idx, layer in enumerate(self._recurrent_layers):
@@ -75,20 +69,21 @@ class MaskedRecurrentLayer(BaseLayerModule):
     """
 
     def __init__(
-            self,
-            input_size: int,
-            hidden_size: int,
-            nonlinearity="tanh",
-            batch_first: bool = False,
+        self,
+        input_size: int,
+        hidden_size: int,
+        nonlinearity=torch.nn.Tanh(),
+        batch_first: bool = False,
     ):
         super(MaskedRecurrentLayer, self).__init__()
 
         assert input_size > 0
         assert hidden_size > 0
+        assert callable(nonlinearity)
 
         self._input_size = input_size
         self._hidden_size = hidden_size
-        self._nonlinearity = nonlinearity.lower()
+        self._nonlinearity = nonlinearity
         self._batch_first = True if batch_first else False
 
         self._weight_ih = Parameter(torch.randn(hidden_size, input_size))
@@ -108,8 +103,7 @@ class MaskedRecurrentLayer(BaseLayerModule):
         igate = torch.mm(input, (self._weight_ih * self._mask_i2h).t()) + self._bias_ih
         hgate = torch.mm(hx, (self._weight_hh * self._mask_h2h).t()) + self._bias_hh
 
-        _act = _rnn_activations[self._nonlinearity]
-        return _act(igate + hgate)
+        return self._nonlinearity(igate + hgate)
 
     def extra_repr(self):
         s = "in_features={_input_size}, out_features={_hidden_size}, nonlinearity={_nonlinearity}"
@@ -134,13 +128,19 @@ class MaskedDeepRNN(BaseMaskModule):
     """
 
     def __init__(
-            self, input_size, hidden_layers: list, nonlinearity="tanh", batch_first=False
+        self,
+        input_size,
+        hidden_layers: list,
+        nonlinearity=torch.nn.Tanh(),
+        batch_first=False,
     ):
         super(MaskedDeepRNN, self).__init__()
 
+        assert callable(nonlinearity)
+
         self._input_size = input_size
         self._hidden_layers = hidden_layers
-        self._nonlinearity = nonlinearity.lower()
+        self._nonlinearity = nonlinearity
         self._batch_first = batch_first
 
         self._recurrent_layers = nn.ModuleList()
@@ -187,7 +187,10 @@ class MaskedGRULayer(BaseLayerModule):
     """
 
     def __init__(
-            self, input_size: int, hidden_size: int, batch_first: bool = False,
+        self,
+        input_size: int,
+        hidden_size: int,
+        batch_first: bool = False,
     ):
         super(MaskedGRULayer, self).__init__()
 
@@ -298,7 +301,10 @@ class MaskedLSTMLayer(BaseLayerModule):
     """
 
     def __init__(
-            self, input_size: int, hidden_size: int, batch_first: bool = False,
+        self,
+        input_size: int,
+        hidden_size: int,
+        batch_first: bool = False,
     ):
         super(MaskedLSTMLayer, self).__init__()
 
