@@ -1,5 +1,9 @@
 # Changelog for deepstruct
 
+## 0.6
+* introduced *BaseRecurrentLayer*, *MaskedRecurrentLayer*, *MaskedGRULayer*, *MaskedLSTMLayer*
+* introduced *deepstruct.recurrent.MaskedDeepRNN* for sparse recurrent models
+
 ## 0.5
 * new feature: concept of scalable families which is a first notion of *graph themes* analysis
 * file restructuring for better semantics

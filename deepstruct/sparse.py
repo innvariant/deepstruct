@@ -483,7 +483,7 @@ def prunable_layers_with_name(network):
     return maskable_layers_with_name(network)
 
 
-class MaskedLinearLayer(nn.Linear):
+class MaskedLinearLayer(nn.Linear, MaskableModule):
     def __init__(self, in_feature, out_features, bias=True, keep_layer_input=False):
         """
         :param in_feature:          The number of features that are inserted in the layer.

@@ -1,17 +1,19 @@
 # Roadmap
 
 **New Features**
-- sparse recurrent network models
-- mapping between network models and graphs
+- [ ] sparse recurrent network models
+- [ ] mapping between network models and graphs (partially there)
+- [ ] scalable graph themes for transformation into function space
 
 **General**
+- [ ] describe idea of graph themes
 - [ ] describe architecture of deepstruct with flowcharts / visualizations
-- [ ] organize and explain when to use which sparse model in application
 - [ ] describe idea of mapping between network model and graphs (we use networkx)
+- [x] organize and explain when to use which sparse model in application
 
 
 # Architecture
-
+Flat & simple :)
 
 # Practices & Conventions
 
