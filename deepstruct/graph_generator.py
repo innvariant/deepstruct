@@ -1,16 +1,22 @@
+from functools import reduce
+
+import networkx as nx
 import torch
 import torch.nn as nn
 import torch.nn.functional
-import networkx as nx
-from deepstruct.graph_class import GraphClass
-from functools import reduce
+
 from torch.nn.parameter import Parameter
-from tqdm import tqdm
+
+from deepstruct.graph_class import GraphClass
+
+
+# from tqdm import tqdm
+# Wrapped tqdm for now as we might want to avoid another dependency
+def tqdm(x):
+    return x
 
 
 class GraphGenerator:
-    __slots__ = ['__graph_structure', '__layer_id', '__node_id', '__to_position']
-
     def __init__(self):
         self.__graph_structure = []
         self.__layer_id = 0
@@ -32,21 +38,38 @@ class GraphGenerator:
             self.__layer_id += 1
 
             if isinstance(member, nn.Conv2d):
-                input_tensor = self.__transform_conv2d_to_graph(threshold, input_tensor, member)
+                input_tensor = self.__transform_conv2d_to_graph(
+                    threshold, input_tensor, member
+                )
 
             if isinstance(member, nn.MaxPool2d):
-                input_tensor = self.__transform_maxpool_to_graph(threshold, input_tensor, member, False)
+                input_tensor = self.__transform_maxpool_to_graph(
+                    threshold, input_tensor, member, False
+                )
 
             if isinstance(member, nn.AdaptiveAvgPool2d):
-                input_tensor = self.__transform_maxpool_to_graph(threshold, input_tensor, member, True)
+                input_tensor = self.__transform_maxpool_to_graph(
+                    threshold, input_tensor, member, True
+                )
 
             if isinstance(member, nn.Linear):
-                input_tensor = self.__transform_linear_to_graph(threshold, input_tensor, member)
+                input_tensor = self.__transform_linear_to_graph(
+                    threshold, input_tensor, member
+                )
 
-            self.__to_position = [(lyr, c, n) for lyr, c, n in self.__to_position if lyr == self.__layer_id]
+            self.__to_position = [
+                (lyr, c, n)
+                for lyr, c, n in self.__to_position
+                if lyr == self.__layer_id
+            ]
 
         for graph in self.__graph_structure:
-            add_edge_to_graph(graph.from_node, graph.to_node, weight=graph.weight, layer_id=graph.layer_id)
+            add_edge_to_graph(
+                graph.from_node,
+                graph.to_node,
+                weight=graph.weight,
+                layer_id=graph.layer_id,
+            )
 
         print("Graph generated successfully.")
         return generated_graph
@@ -64,16 +87,31 @@ class GraphGenerator:
         to_append = self.__to_position.append
 
         print(
-            "IN_Channels = " + str(in_channels) + " Out_ channels = " + str(out_channels) + " Kernel_size = " + str(
-                kernel_size) + " Stride: " + str(stride) + " Padding: " + str(padding) + " Dilation: " + str(dilation))
+            "IN_Channels = "
+            + str(in_channels)
+            + " Out_ channels = "
+            + str(out_channels)
+            + " Kernel_size = "
+            + str(kernel_size)
+            + " Stride: "
+            + str(stride)
+            + " Padding: "
+            + str(padding)
+            + " Dilation: "
+            + str(dilation)
+        )
 
         # Remove Unimportant weights
         zeros_output = torch.zeros(member.weight.shape)
-        member.weight = Parameter(torch.where((member.weight > threshold), member.weight, zeros_output))
+        member.weight = Parameter(
+            torch.where((member.weight > threshold), member.weight, zeros_output)
+        )
         zeros_output = None
 
         if padding > 0:
-            input_tensor_padding = torch.nn.functional.pad(input_tensor, (padding, padding, padding, padding))
+            input_tensor_padding = torch.nn.functional.pad(
+                input_tensor, (padding, padding, padding, padding)
+            )
             input_dimension = input_tensor_padding.size(3)
         else:
             input_dimension = input_tensor.size(3)
@@ -85,18 +123,32 @@ class GraphGenerator:
         from_position = {}
         value_temp = 0
         output_single_channle_size = new_size_output / out_channels
-        previous_positions = ((lyr, c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1))
+        previous_positions = (
+            (lyr, c, n)
+            for lyr, c, n in self.__to_position
+            if lyr == (self.__layer_id - 1)
+        )
 
         output_dimension_sqr = output_dimension * output_dimension
         input_dimension_sqr = input_dimension * input_dimension
 
-        for value in tqdm(range(new_size_output)):  # loop will execute as per number of output size
+        for value in tqdm(
+            range(new_size_output)
+        ):  # loop will execute as per number of output size
             to_node = self.__node_id + 1
             self.__node_id = to_node + 1
 
             to_append((self.__layer_id, value, to_node))
-            row_number = int(((value_temp * stride) + (kernel_size - 1)) / input_dimension)
-            column_number = int(((((value % output_dimension) - 1) * stride) + kernel_size) % input_dimension) -1
+            row_number = int(
+                ((value_temp * stride) + (kernel_size - 1)) / input_dimension
+            )
+            column_number = (
+                int(
+                    ((((value % output_dimension) - 1) * stride) + kernel_size)
+                    % input_dimension
+                )
+                - 1
+            )
 
             for input_kernel_number in range(in_channels):
                 channel_row_number = row_number * stride
@@ -104,12 +156,22 @@ class GraphGenerator:
                 if value % output_dimension_sqr == 0:
                     value_temp = 0
                     channel_row_number = 0
-                from_position_value_0 = column_number + (input_kernel_number * (input_dimension_sqr))
+                from_position_value_0 = column_number + (
+                    input_kernel_number * (input_dimension_sqr)
+                )
 
                 for column_loop in range(kernel_size):
-                    from_position_value_1 = from_position_value_0 + (channel_row_number * input_dimension)
+                    from_position_value_1 = from_position_value_0 + (
+                        channel_row_number * input_dimension
+                    )
                     for row_loop in range(kernel_size):
-                        if member.weight[int(value / output_single_channle_size),input_kernel_number][column_loop,row_loop]<= 0:
+                        if (
+                            member.weight[
+                                int(value / output_single_channle_size),
+                                input_kernel_number,
+                            ][column_loop, row_loop]
+                            <= 0
+                        ):
                             continue
 
                         from_position_value = from_position_value_1 + row_loop
@@ -117,16 +179,33 @@ class GraphGenerator:
                         is_add = True
                         for lyr, c, n in previous_positions:
                             if c == from_position_value:
-                                graph_append(GraphClass(n, self.__layer_id, n, to_node, 0))
+                                graph_append(
+                                    GraphClass(n, self.__layer_id, n, to_node, 0)
+                                )
                                 is_add = False
                                 break
                         if is_add:
                             if from_position_value in from_position:
-                                graph_append(GraphClass(from_position[from_position_value], self.__layer_id,
-                                                                  from_position[from_position_value], to_node, 0))
+                                graph_append(
+                                    GraphClass(
+                                        from_position[from_position_value],
+                                        self.__layer_id,
+                                        from_position[from_position_value],
+                                        to_node,
+                                        0,
+                                    )
+                                )
                             else:
                                 from_position[from_position_value] = self.__node_id
-                                graph_append(GraphClass(self.__node_id, self.__layer_id, self.__node_id, to_node, 0))
+                                graph_append(
+                                    GraphClass(
+                                        self.__node_id,
+                                        self.__layer_id,
+                                        self.__node_id,
+                                        to_node,
+                                        0,
+                                    )
+                                )
                                 self.__node_id += 1
                         # print(str(from_position_value) + " to Poistion: " + str(value))
                     channel_row_number += 1
@@ -135,10 +214,12 @@ class GraphGenerator:
         print("Convolution layer Completed.")
         return input_tensor
 
-    def __transform_maxpool_to_graph(self, threshold, input_tensor, member, is_adaptive):
+    def __transform_maxpool_to_graph(
+        self, threshold, input_tensor, member, is_adaptive
+    ):
 
         if is_adaptive:
-            kernel_size = 2     # Hard coded for AlexNet Adaptive AvgPool layer
+            kernel_size = 2  # Hard coded for AlexNet Adaptive AvgPool layer
             stride = 1
             print("Adaptive Pooling started.")
         else:
@@ -158,7 +239,11 @@ class GraphGenerator:
         # Flat the output image from 2d to 1d
         new_size_output = reduce(lambda x, y: x * y, input_tensor.size())
         from_position = {}
-        previous_positions = [(lyr, c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1)]
+        previous_positions = [
+            (lyr, c, n)
+            for lyr, c, n in self.__to_position
+            if lyr == (self.__layer_id - 1)
+        ]
 
         for value in tqdm(range(new_size_output)):
             to_node = self.__node_id + 1
@@ -173,11 +258,17 @@ class GraphGenerator:
             else:
                 stride_for_increment = stride
 
-            from_position_value_1 = (column_number * stride_for_increment) + (row_number * input_dimension * stride)
+            from_position_value_1 = (column_number * stride_for_increment) + (
+                row_number * input_dimension * stride
+            )
 
             for column_loop in range(kernel_size):
                 for row_loop in range(kernel_size):
-                    from_position_value = from_position_value_1 + row_loop + (column_loop * input_dimension)
+                    from_position_value = (
+                        from_position_value_1
+                        + row_loop
+                        + (column_loop * input_dimension)
+                    )
 
                     # print(str(from_position_value) + " to Poistion: " + str(value))
                     is_add = True
@@ -190,10 +281,25 @@ class GraphGenerator:
                     if is_add:
                         if from_position_value in from_position:
                             graph_append(
-                                GraphClass(from_position[from_position_value], self.__layer_id, from_position[from_position_value], to_node, 0))
+                                GraphClass(
+                                    from_position[from_position_value],
+                                    self.__layer_id,
+                                    from_position[from_position_value],
+                                    to_node,
+                                    0,
+                                )
+                            )
                         else:
                             from_position[from_position_value] = self.__node_id
-                            graph_append(GraphClass(self.__node_id, self.__layer_id, self.__node_id, to_node, 0))
+                            graph_append(
+                                GraphClass(
+                                    self.__node_id,
+                                    self.__layer_id,
+                                    self.__node_id,
+                                    to_node,
+                                    0,
+                                )
+                            )
                             self.__node_id += 1
 
         # for graph in self.__graph_structure:
@@ -204,7 +310,9 @@ class GraphGenerator:
     def __transform_linear_to_graph(self, threshold, input_tensor, member):
         in_features = vars(member).get("in_features")
         out_features = vars(member).get("out_features")
-        print("in_features = " + str(in_features) + " out_features = " + str(out_features))
+        print(
+            "in_features = " + str(in_features) + " out_features = " + str(out_features)
+        )
         new_size = reduce(lambda x, y: x * y, input_tensor.size())
         input_tensor = member(input_tensor.view(-1, new_size))
         linear_weights = vars(member).get("_parameters").get("weight")
@@ -214,11 +322,17 @@ class GraphGenerator:
 
         # Remove Unimportant weights
         zeros_weight = torch.zeros(out_features, in_features)
-        new_weights = torch.where(linear_weights > threshold, linear_weights, zeros_weight)
+        new_weights = torch.where(
+            linear_weights > threshold, linear_weights, zeros_weight
+        )
 
         from_position = {}
         to_counter = 0
-        previous_positions = [(lyr, c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1)]
+        previous_positions = [
+            (lyr, c, n)
+            for lyr, c, n in self.__to_position
+            if lyr == (self.__layer_id - 1)
+        ]
         for new_weight_1 in tqdm(new_weights):  # output layers node time run
             to_node = self.__node_id + 1
             self.__node_id += 1
@@ -231,20 +345,36 @@ class GraphGenerator:
                 if weight_value != 0:
                     is_add = True
                     for lyr, c, n in previous_positions:
-                        if c == counter-1:
-                            graph_append(GraphClass(n, self.__layer_id, n, to_node, weight_value))
+                        if c == counter - 1:
+                            graph_append(
+                                GraphClass(n, self.__layer_id, n, to_node, weight_value)
+                            )
                             is_add = False
                             break
                     if is_add:
-                        if counter in from_position:  # Prevent creating new node id for already existing node
+                        if (
+                            counter in from_position
+                        ):  # Prevent creating new node id for already existing node
                             graph_append(
-                                GraphClass(from_position[counter], self.__layer_id, from_position[counter], to_node,
-                                           weight_value))
+                                GraphClass(
+                                    from_position[counter],
+                                    self.__layer_id,
+                                    from_position[counter],
+                                    to_node,
+                                    weight_value,
+                                )
+                            )
                         else:
                             self.__node_id += 1
-                            graph_append(GraphClass(self.__node_id, self.__layer_id, self.__node_id, to_node, weight_value))
+                            graph_append(
+                                GraphClass(
+                                    self.__node_id,
+                                    self.__layer_id,
+                                    self.__node_id,
+                                    to_node,
+                                    weight_value,
+                                )
+                            )
                             from_position[counter] = self.__node_id
         print("Linear layer completed.")
         return input_tensor
-
-

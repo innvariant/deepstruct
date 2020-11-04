@@ -1,10 +1,17 @@
 import torch
+import torch.nn as nn
 import torch.nn.functional
-# from draw_graph import draw_graph
-from deepstruct.graph_generator import GraphGenerator
-from tests.graph_generator.test_Architectures import *
-from tests.graph_generator.test_TensorsData import TestTensorsData
+
 from torch.nn.parameter import Parameter
+
+from deepstruct.graph_generator import GraphGenerator
+from tests.graph_generator.test_Architectures import Conv_Padding_Layers
+from tests.graph_generator.test_Architectures import Conv_Padding_Multi_In
+from tests.graph_generator.test_Architectures import ConvMaxPoolLayers
+from tests.graph_generator.test_Architectures import LinearLayer
+from tests.graph_generator.test_Architectures import MaxPoolLayers
+from tests.graph_generator.test_TensorsData import TestTensorsData
+
 
 graph_obj = GraphGenerator()
 
@@ -36,7 +43,6 @@ def test_max_pool_layer():
     # # Assert
     assert directed_graph.number_of_edges() == 36
     assert directed_graph.number_of_nodes() == 45
-
 
 
 def test_conv_max_pool_layer():
@@ -90,10 +96,3 @@ def test_linear_layer():
     directed_graph = graph_obj.generate_graph(model, 0.0, input_tensor.view(6, 1))
     # Assert
     assert directed_graph.number_of_edges() == 8
-
-
-test_max_pool_layer()
-test_conv_max_pool_layer()
-test_conv_padding_layer()
-test_conv_padding_layer_multi_in()
-test_linear_layer()
