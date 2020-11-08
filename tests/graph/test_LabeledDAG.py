@@ -1,3 +1,5 @@
+import itertools
+
 import numpy as np
 import pytest
 
@@ -92,6 +94,21 @@ def test_add_two_layers():
     assert len(dag.nodes) == size_layer0 + size_layer1
     assert len(dag.edges) == size_layer0 * size_layer1
     assert dag.num_layers == 2
+
+
+def test_add_two_layers_crossing():
+    # Arrange
+    dag = deepstruct.graph.LabeledDAG()
+
+    size_layer0 = np.random.randint(2, 10)
+    size_layer1 = np.random.randint(2, 10)
+
+    # Act
+    dag.add_edges_from(
+        itertools.product(
+            np.arange(size_layer0), np.arange(size_layer0 + size_layer1 + 1)
+        )
+    )
 
 
 def test_multiple_large_layers():

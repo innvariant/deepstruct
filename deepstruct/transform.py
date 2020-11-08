@@ -1,5 +1,9 @@
+import itertools
+
+import numpy as np
 import torch
 
+from deepstruct.graph import LabeledDAG
 from deepstruct.graph import LayeredGraph
 from deepstruct.sparse import MaskedLinearLayer
 
@@ -18,16 +22,15 @@ class ForgetfulFunctor:
 
 
 class LinearLayerFunctor(ForgetfulFunctor):
-    def __init__(self, threshold: float = None):
+    def __init__(self, graph: LayeredGraph = None, threshold: float = None):
         self._threshold = threshold
 
     def transform_masked(self, model: MaskedLinearLayer):
         # TODO implement
         if self._threshold is not None:
             model.recompute_mask()
-        model.get_mask()
 
-        return None
+        return self.transform_mask(model.get_mask())
 
     def transform_linear(self, model: torch.nn.Linear):
         # TODO implement
@@ -40,7 +43,31 @@ class LinearLayerFunctor(ForgetfulFunctor):
         mask = torch.ones((out_features, in_features), dtype=torch.bool)
         # TODO maybe also allow for non-L1-pruning methods?
         mask[torch.where(abs(model.weight) < self._threshold)] = False
-        return None
+
+        return self.transform_mask(mask)
+
+    def transform_mask(self, mask: torch.tensor):
+        assert mask is not None
+        assert mask.dtype == torch.bool
+        assert len(mask.shape) == 2
+
+        graph = LabeledDAG()
+        dim_input = mask.shape[1]
+        dim_output = mask.shape[0]
+
+        map_index2vertex_input = {idx: graph.add_vertex(0) for idx in range(dim_input)}
+        map_index2vertex_output = {
+            idx: graph.add_vertex(1) for idx in range(dim_output)
+        }
+
+        edges = [
+            (map_index2vertex_input[s], map_index2vertex_output[t])
+            for (s, t) in itertools.product(np.arange(dim_input), np.arange(dim_output))
+            if mask[t, s]
+        ]
+        graph.add_edges_from(edges)
+
+        return graph
 
     def transform(self, model: torch.nn):
         return (

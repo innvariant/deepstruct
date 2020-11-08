@@ -308,9 +308,37 @@ class LabeledDAG(LayeredGraph):
     def add_node(self, node_for_adding, **attr):
         return self.add_vertex(layer=0 if "layer" not in attr else attr["layer"])
 
+    def _get_next_layer_or_param(self, layer_source: int, **attr):
+        return (
+            max(1, layer_source + 1)
+            if "target_layer" not in attr
+            else int(attr["target_layer"])
+        )
+
     def add_edges_from(self, ebunch_to_add, **attr):
-        for (u, v) in ebunch_to_add:
-            self.add_edge(u, v, **attr)
+        new_layer_source = (
+            0 if "source_layer" not in attr else int(attr["source_layer"])
+        )
+        source_map = {}
+        target_map = {}
+        edges = []
+        for (s, t) in ebunch_to_add:
+            if s not in source_map:
+                source_map[s] = (
+                    s if s in self.nodes else self.add_vertex(new_layer_source)
+                )
+            if t not in target_map:
+                target_map[t] = (
+                    t
+                    if t in self.nodes
+                    else self.add_vertex(
+                        self._get_next_layer_or_param(
+                            self.get_layer(source_map[s]), **attr
+                        )
+                    )
+                )
+            edges.append((source_map[s], target_map[t]))
+        super().add_edges_from(edges)
 
     @property
     def first_layer(self):
