@@ -176,3 +176,66 @@ def test_append_simple():
 
     assert len(graph1) == graph1_size_layer0 + graph1_size_layer1 + graph2_size_layer1
     assert len(graph1.edges) == graph1_num_edges + graph2_num_edges
+
+
+def test_append_multiple_large_layers():
+    # Arrange
+    graph1 = deepstruct.graph.LabeledDAG()
+    graph2 = deepstruct.graph.LabeledDAG()
+
+    graph1_num_layers = np.random.randint(10, 21)
+    graph1_size_layer = {}
+    for layer in range(graph1_num_layers):
+        graph1_size_layer[layer] = np.random.randint(50, 101)
+        graph1.add_vertices(graph1_size_layer[layer], layer=layer)
+
+    graph2_num_layers = np.random.randint(10, 21)
+    graph2_size_layer = {0: graph1_size_layer[graph1_num_layers - 1]}
+    graph2.add_vertices(graph2_size_layer[0], layer=0)
+    for layer in range(1, graph2_num_layers):
+        graph2_size_layer[layer] = np.random.randint(50, 101)
+        graph2.add_vertices(graph2_size_layer[layer], layer=layer)
+
+    num_edges = {}
+    for graph, num_layers in zip(
+        [graph1, graph2], [graph1_num_layers, graph2_num_layers]
+    ):
+        num_edges[graph] = 0
+        for layer_source in range(num_layers - 1):
+            for layer_target in np.random.choice(
+                range(layer_source + 1, num_layers),
+                np.random.randint(num_layers - layer_source),
+                replace=False,
+            ):
+                v_source = np.random.choice(
+                    graph.get_vertices(layer_source),
+                    graph.get_layer_size(layer_source),
+                    replace=False,
+                )
+                v_target = np.random.choice(
+                    graph.get_vertices(layer_target),
+                    graph.get_layer_size(layer_target),
+                    replace=False,
+                )
+                graph.add_edges_from((s, t) for t in v_target for s in v_source)
+                num_edges[graph] += len(v_source) * len(v_target)
+
+    # Pre-Check
+    for graph, num_layers, size_layer in zip(
+        [graph1, graph2],
+        [graph1_num_layers, graph2_num_layers],
+        [graph1_size_layer, graph2_size_layer],
+    ):
+        assert len(graph.nodes) == sum(size_layer.values())
+        assert len(graph.edges) == num_edges[graph]
+        assert graph.num_layers == num_layers
+
+    # Act
+    graph1.append(graph2)
+
+    # Assert
+    assert len(graph1.nodes) == sum(graph1_size_layer.values()) + sum(
+        graph2_size_layer.values()
+    ) - graph2.get_layer_size(0)
+    assert len(graph1.edges) == num_edges[graph1] + num_edges[graph2]
+    assert graph1.num_layers == graph1_num_layers + graph2_num_layers - 1
