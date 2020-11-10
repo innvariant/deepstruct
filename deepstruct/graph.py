@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import networkx as nx
 import numpy as np
 
@@ -251,6 +253,10 @@ class LabeledDAG(LayeredGraph):
     def _vertices_by_layer(self, layer: int):
         return self._get_layer_index()[1][layer]
 
+    def index_in_layer(self, vertex):
+        match = np.where(self.get_vertices(self.get_layer(vertex)) == vertex)
+        return match[0][0] if len(match) > 0 else None
+
     def add_vertex(self, layer: int = 0):
         assert layer >= 0
 
@@ -273,6 +279,26 @@ class LabeledDAG(LayeredGraph):
         self._layer_index.update(dict.fromkeys(new_nodes, layer))
         super().add_nodes_from(new_nodes)
         return new_nodes
+
+    def append(self, other: LabeledDAG):
+        assert self.last_layer is not None
+        assert other is not None
+        assert other.first_layer is not None
+        assert other.first_layer != other.last_layer
+        assert self.last_layer_size == other.first_layer_size
+
+        offset_layer = self.last_layer
+
+        for layer in other.layers[1:]:
+            own_layer_target = offset_layer + layer
+            self.add_vertices(other.get_layer_size(layer), own_layer_target)
+            for oth_v_idx, oth_v in enumerate(other.get_vertices(layer)):
+                own_v = self.get_vertices(own_layer_target)[oth_v_idx]
+                for (oth_u, _) in other.in_edges(oth_v):
+                    oth_u_idx = other.index_in_layer(oth_u)
+                    own_layer_source = offset_layer + other.get_layer(oth_u)
+                    own_u = self.get_vertices(own_layer_source)[oth_u_idx]
+                    self.add_edge(own_u, own_v)
 
     def add_edge(self, u_of_edge, v_of_edge, **attr):
         new_layer_source = (
@@ -345,14 +371,14 @@ class LabeledDAG(LayeredGraph):
         """
         :rtype: int
         """
-        return self.layers[0]
+        return self.layers[0] if self.num_layers > 0 else None
 
     @property
     def last_layer(self):
         """
         :rtype: int
         """
-        return self.layers[-1]
+        return self.layers[-1] if self.num_layers > 0 else None
 
     @property
     def num_layers(self):
@@ -417,6 +443,11 @@ class LabeledDAG(LayeredGraph):
                 if self.has_edge(source_vertex, target_vertex):
                     size += 1
         return size
+
+
+class MarkableDAG(LabeledDAG):
+    def add_connection(self, mark: str, s_idx: int, t_idx: int):
+        pass
 
 
 def build_layer_index(graph: nx.DiGraph, layer_index=None):

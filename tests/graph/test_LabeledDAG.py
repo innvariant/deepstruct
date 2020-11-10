@@ -146,3 +146,33 @@ def test_multiple_large_layers():
     assert len(dag.nodes) == sum(size_layer.values())
     assert len(dag.edges) == num_edges
     assert dag.num_layers == num_layers
+
+
+def test_append_simple():
+    # Arrange
+    graph1 = deepstruct.graph.LabeledDAG()
+    graph2 = deepstruct.graph.LabeledDAG()
+
+    graph1_size_layer0 = 3  # np.random.randint(2, 10)
+    graph1_size_layer1 = 5  # np.random.randint(2, 10)
+    graph2_size_layer0 = graph1_size_layer1
+    graph2_size_layer1 = 4  # np.random.randint(2, 10)
+
+    graph1_layer0 = graph1.add_vertices(graph1_size_layer0, layer=0)
+    graph1_layer1 = graph1.add_vertices(graph1_size_layer1, layer=1)
+    graph2_layer0 = graph2.add_vertices(graph2_size_layer0, layer=0)
+    graph2_layer1 = graph2.add_vertices(graph2_size_layer1, layer=1)
+    graph1.add_edges_from(
+        (s, t) for t in graph1_layer1 for s in graph1_layer0 if np.random.randint(2)
+    )
+    graph2.add_edges_from(
+        (s, t) for t in graph2_layer1 for s in graph2_layer0 if np.random.randint(3)
+    )
+
+    graph1_num_edges = len(graph1.edges)
+    graph2_num_edges = len(graph2.edges)
+
+    graph1.append(graph2)
+
+    assert len(graph1) == graph1_size_layer0 + graph1_size_layer1 + graph2_size_layer1
+    assert len(graph1.edges) == graph1_num_edges + graph2_num_edges

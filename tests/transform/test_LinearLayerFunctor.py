@@ -26,8 +26,8 @@ def test_linear_new_independent_graph():
 
 def test_linear_simple_with_prior_graph():
     prior_graph = LabeledDAG()
-    size_layer_1 = 4
-    size_layer_2 = 4
+    size_layer_1 = 20
+    size_layer_2 = 10
     prior_graph.add_edges_from(
         itertools.product(
             np.arange(size_layer_1),
@@ -37,6 +37,8 @@ def test_linear_simple_with_prior_graph():
 
     model = torch.nn.Linear(10, 5)
 
-    functor = LinearLayerFunctor(graph=prior_graph, threshold=0.01)
+    functor = LinearLayerFunctor(threshold=0.01)
 
     functor.transform(model)
+
+    assert prior_graph.num_layers == 2
