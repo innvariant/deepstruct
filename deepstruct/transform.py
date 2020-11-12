@@ -89,7 +89,10 @@ class Conv2dLayerFunctor(ForgetfulFunctor):
 
     def transform(self, model: torch.nn.Module) -> LabeledDAG:
         assert isinstance(model, torch.nn.Conv2d)
-        assert model.dilation == (1, 1), "Currently dilation is not considered in this implementation"
+        assert model.dilation == (
+            1,
+            1,
+        ), "Currently dilation is not considered in this implementation"
 
         channels_in = model.in_channels
         channels_out = model.out_channels
@@ -98,9 +101,21 @@ class Conv2dLayerFunctor(ForgetfulFunctor):
         padding = model.padding
 
         graph = LabeledDAG()
-        input_neurons = graph.add_vertices(channels_in * self._input_width * self._input_height, layer=0)
-        output_shape = lambda size, dim: np.floor((size - size_kernel[dim] + 2*padding[dim]) / stride[dim]) + 1
-        output_neurons = graph.add_vertices(channels_out * output_shape(self._input_width, 0) * output_shape(self._input_height, 1), layer=1)
+        input_neurons = graph.add_vertices(
+            channels_in * self._input_width * self._input_height, layer=0
+        )
+        output_shape = (
+            lambda size, dim: np.floor(
+                (size - size_kernel[dim] + 2 * padding[dim]) / stride[dim]
+            )
+            + 1
+        )
+        output_neurons = graph.add_vertices(
+            channels_out
+            * output_shape(self._input_width, 0)
+            * output_shape(self._input_height, 1),
+            layer=1,
+        )
 
         print(len(input_neurons))
         print(len(output_neurons))
