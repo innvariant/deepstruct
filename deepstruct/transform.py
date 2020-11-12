@@ -110,16 +110,76 @@ class Conv2dLayerFunctor(ForgetfulFunctor):
             )
             + 1
         )
+        output_height = output_shape(self._input_height, 0)
+        output_width = output_shape(self._input_width, 1)
+        print("output height", output_height)
+        print("output width", output_width)
         output_neurons = graph.add_vertices(
-            channels_out
-            * output_shape(self._input_width, 0)
-            * output_shape(self._input_height, 1),
+            channels_out * output_height * output_width,
             layer=1,
         )
 
         print(len(input_neurons))
         print(len(output_neurons))
-        # TODO: connectivity of convolution
+
+        def get_input_neuron(channel: int, row: int, col: int):
+            return int(
+                input_neurons[
+                    int(
+                        (col * self._input_height + row)
+                        + (channel * self._input_width * self._input_height)
+                    )
+                ]
+            )
+
+        def get_output_neuron(channel_out: int, row: int, col: int):
+            return int(
+                output_neurons[
+                    int(
+                        (col * output_height + row)
+                        + (channel_out * output_width * output_height)
+                    )
+                ]
+            )
+
+        for idx_channel_out in range(channels_out):
+            print("Channel", idx_channel_out)
+            print()
+            for idx_channel_in in range(channels_in):
+                out_col = 0
+                offset_height = -padding[0]
+                while offset_height + stride[0] < self._input_height:
+                    out_row = 0
+                    offset_width = -padding[1]
+                    while offset_width + stride[1] < self._input_width:
+                        # print(offset_width)
+                        print("out:", (out_row, out_col), end="")
+                        target = get_output_neuron(idx_channel_out, out_row, out_col)
+                        print("", target)
+                        tmp_col = 0
+                        tmp_ll = []
+                        # print(list(range(max(0, offset_height), min(offset_height+size_kernel[0], self._input_height))))
+                        # print(list(range(max(0, offset_width), min(offset_width+size_kernel[1], self._input_width))))
+                        for col in range(
+                            max(0, offset_height),
+                            min(offset_height + size_kernel[0], self._input_height),
+                        ):
+                            for row in range(
+                                max(0, offset_width),
+                                min(offset_width + size_kernel[1], self._input_width),
+                            ):
+                                source = get_input_neuron(idx_channel_in, row, col)
+                                tmp_ll.append((source, target))
+                                tmp_col += 1
+                                graph.add_edge(source, target)
+                        if tmp_col != 9:
+                            print(tmp_ll)
+                        offset_width += stride[1]
+                        out_row += 1
+                    print("o1: ", offset_width)
+                    print("o2: ", self._input_width + padding[1])
+                    offset_height += stride[0]
+                    out_col += 1
 
         return graph
 
