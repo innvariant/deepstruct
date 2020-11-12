@@ -68,7 +68,7 @@ class LinearLayerFunctor(ForgetfulFunctor):
 
         return graph
 
-    def transform(self, model: torch.nn):
+    def transform(self, model: torch.nn.Module):
         return (
             self.transform_masked(model)
             if isinstance(model, MaskedLinearLayer)
@@ -79,6 +79,37 @@ class LinearLayerFunctor(ForgetfulFunctor):
         return isinstance(model, torch.nn.Linear) or isinstance(
             model, MaskedLinearLayer
         )
+
+
+class Conv2dLayerFunctor(ForgetfulFunctor):
+    def __init__(self, input_width: int, input_height: int, threshold: float = None):
+        self._input_width = input_width
+        self._input_height = input_height
+        self._threshold = threshold
+
+    def transform(self, model: torch.nn.Module) -> LabeledDAG:
+        assert isinstance(model, torch.nn.Conv2d)
+        assert model.dilation == (1, 1), "Currently dilation is not considered in this implementation"
+
+        channels_in = model.in_channels
+        channels_out = model.out_channels
+        size_kernel = model.kernel_size
+        stride = model.stride
+        padding = model.padding
+
+        graph = LabeledDAG()
+        input_neurons = graph.add_vertices(channels_in * self._input_width * self._input_height, layer=0)
+        output_shape = lambda size, dim: np.floor((size - size_kernel[dim] + 2*padding[dim]) / stride[dim]) + 1
+        output_neurons = graph.add_vertices(channels_out * output_shape(self._input_width, 0) * output_shape(self._input_height, 1), layer=1)
+
+        print(len(input_neurons))
+        print(len(output_neurons))
+        # TODO: connectivity of convolution
+
+        return graph
+
+    def applies(self, model: torch.nn.Module):
+        return isinstance(model, torch.nn.Conv2d)
 
 
 class GraphTransform(ForgetfulFunctor):
