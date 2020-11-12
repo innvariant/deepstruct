@@ -41,6 +41,7 @@ Suitable for simple and canonical pruning research on zero-ordered structure
 Suitable for arbitrary structures on zero-order and on that level most flexible but also computationally expensive.
 - *deepstruct.sparse.DeepCellDAN*: complex module based on a directed acyclic network and custom cells on third-order structures.
 Suitable for large-scale neural architecture search
+- *deepstruct.recurrent.MaskedDeepRNN*: multi-layered network with recurrent layers which can be masked
 
 ## What is the orders of structure?
 - zero-th order: weight-level
@@ -108,6 +109,32 @@ import deepstruct.sparse
 model = deepstruct.sparse.MaskedDeepFFN(784, 10, [100, 100])
 # .. train model
 model.generate_structure()  # a networkx graph
+```
+
+
+### Recurrent Neural Networks with sparsity
+```python
+import torch
+import deepstruct.recurrent
+import numpy as np
+
+# A sequence of size 15 with one-dimensional elements which could e.g. be labelled
+# BatchSize x [(1,), (2,), (3,), (4,), (5,), (0,), (0,), (0,)] --> [ label1, label2, ..]
+batch_size = 100
+seq_size = 15
+input_size = 1
+model = deepstruct.recurrent.MaskedDeepRNN(
+    input_size,
+    hidden_layers=[100, 100, 1],
+    batch_first=True,
+    build_recurrent_layer=deepstruct.recurrent.MaskedLSTMLayer,
+)
+random_input = torch.tensor(
+    np.random.random((batch_size, seq_size, input_size)),
+    dtype=torch.float32,
+    requires_grad=False,
+)
+model.forward(random_input)
 ```
 
 
