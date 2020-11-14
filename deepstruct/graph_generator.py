@@ -242,7 +242,7 @@ class GraphGenerator:
 
         print(time.ctime())
         print(os.cpu_count())
-        Parallel(n_jobs=1, prefer="threads", require='sharedmem')(delayed(convolution_internal)
+        Parallel(n_jobs=os.cpu_count(), prefer="threads", require='sharedmem')(delayed(convolution_internal)
                                                                                (i, i, self.__layer_id, kernel_size,
                                                                                 stride,
                                                                                 in_channels, input_dimension,
