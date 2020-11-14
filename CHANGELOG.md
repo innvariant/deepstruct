@@ -1,7 +1,13 @@
 # Changelog for deepstruct
 
-## 0.6
+## 0.7
 * new minimal version requirement is python 3.7
+* introduced interface for "functors" which transform a nn.Module into a directed acyclic graph
+* created a first functor for Linear and MaskedLinear layers
+
+## 0.6
+* introduced *BaseRecurrentLayer*, *MaskedRecurrentLayer*, *MaskedGRULayer*, *MaskedLSTMLayer*
+* introduced *deepstruct.recurrent.MaskedDeepRNN* for sparse recurrent models
 
 ## 0.5
 * new feature: concept of scalable families which is a first notion of *graph themes* analysis

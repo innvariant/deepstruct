@@ -68,7 +68,7 @@ class LinearLayerFunctor(ForgetfulFunctor):
 
         return graph
 
-    def transform(self, model: torch.nn):
+    def transform(self, model: torch.nn.Module):
         return (
             self.transform_masked(model)
             if isinstance(model, MaskedLinearLayer)
@@ -79,6 +79,112 @@ class LinearLayerFunctor(ForgetfulFunctor):
         return isinstance(model, torch.nn.Linear) or isinstance(
             model, MaskedLinearLayer
         )
+
+
+class Conv2dLayerFunctor(ForgetfulFunctor):
+    def __init__(self, input_width: int, input_height: int, threshold: float = None):
+        self._input_width = input_width
+        self._input_height = input_height
+        self._threshold = threshold
+
+    def transform(self, model: torch.nn.Module) -> LabeledDAG:
+        assert isinstance(model, torch.nn.Conv2d)
+        assert model.dilation == (
+            1,
+            1,
+        ), "Currently dilation is not considered in this implementation"
+
+        channels_in = model.in_channels
+        channels_out = model.out_channels
+        size_kernel = model.kernel_size
+        stride = model.stride
+        padding = model.padding
+
+        graph = LabeledDAG()
+        input_neurons = graph.add_vertices(
+            channels_in * self._input_width * self._input_height, layer=0
+        )
+        output_shape = (
+            lambda size, dim: np.floor(
+                (size - size_kernel[dim] + 2 * padding[dim]) / stride[dim]
+            )
+            + 1
+        )
+        output_height = output_shape(self._input_height, 0)
+        output_width = output_shape(self._input_width, 1)
+        print("output height", output_height)
+        print("output width", output_width)
+        output_neurons = graph.add_vertices(
+            channels_out * output_height * output_width,
+            layer=1,
+        )
+
+        print(len(input_neurons))
+        print(len(output_neurons))
+
+        def get_input_neuron(channel: int, row: int, col: int):
+            return int(
+                input_neurons[
+                    int(
+                        (col * self._input_height + row)
+                        + (channel * self._input_width * self._input_height)
+                    )
+                ]
+            )
+
+        def get_output_neuron(channel_out: int, row: int, col: int):
+            return int(
+                output_neurons[
+                    int(
+                        (col * output_height + row)
+                        + (channel_out * output_width * output_height)
+                    )
+                ]
+            )
+
+        for idx_channel_out in range(channels_out):
+            print("Channel", idx_channel_out)
+            print()
+            for idx_channel_in in range(channels_in):
+                out_col = 0
+                offset_height = -padding[0]
+                while offset_height + stride[0] < self._input_height:
+                    out_row = 0
+                    offset_width = -padding[1]
+                    while offset_width + stride[1] < self._input_width:
+                        # print(offset_width)
+                        print("out:", (out_row, out_col), end="")
+                        target = get_output_neuron(idx_channel_out, out_row, out_col)
+                        print("", target)
+                        tmp_col = 0
+                        tmp_ll = []
+                        # print(list(range(max(0, offset_height), min(offset_height+size_kernel[0], self._input_height))))
+                        # print(list(range(max(0, offset_width), min(offset_width+size_kernel[1], self._input_width))))
+                        for col in range(
+                            max(0, offset_height),
+                            min(offset_height + size_kernel[0], self._input_height),
+                        ):
+                            for row in range(
+                                max(0, offset_width),
+                                min(offset_width + size_kernel[1], self._input_width),
+                            ):
+                                source = get_input_neuron(idx_channel_in, row, col)
+                                tmp_ll.append((source, target))
+                                tmp_col += 1
+                                graph.add_edge(source, target)
+                        if tmp_col != 9:
+                            print(tmp_ll)
+                        offset_width += stride[1]
+                        out_row += 1
+                    print("o1: ", offset_width)
+                    print("o2: ", self._input_width + padding[1])
+                    offset_height += stride[0]
+                    out_col += 1
+
+        return graph
+
+    def applies(self, model: torch.nn.Module):
+        return isinstance(model, torch.nn.Conv2d)
 
 
 class GraphTransform(ForgetfulFunctor):

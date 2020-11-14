@@ -1,13 +1,19 @@
+import os
+import time
+
 from functools import reduce
+
 import networkx as nx
 import torch
 import torch.nn as nn
 import torch.nn.functional
+
+from joblib import Parallel
+from joblib import delayed
 from torch.nn.parameter import Parameter
+
 from deepstruct.graph_class import GraphClass
-from joblib import Parallel, delayed
-import os
-import time
+
 
 from_position = {}
 previous_positions = {}
@@ -15,9 +21,22 @@ node_id_for_new_layer = 1
 member_weight = {}
 
 
-def convolution_internal(value, value_temp, layer_id, kernel_size, stride, in_channels,
-                         input_dimension, output_dimension, input_dimension_sqr, output_dimension_sqr,
-                         output_single_channle_size, previous_positions, graph_append, to_append):
+def convolution_internal(
+    value,
+    value_temp,
+    layer_id,
+    kernel_size,
+    stride,
+    in_channels,
+    input_dimension,
+    output_dimension,
+    input_dimension_sqr,
+    output_dimension_sqr,
+    output_single_channle_size,
+    previous_positions,
+    graph_append,
+    to_append,
+):
 
     to_node = (value * in_channels * kernel_size * kernel_size) + value
     self_node_id = to_node + 1
@@ -26,7 +45,13 @@ def convolution_internal(value, value_temp, layer_id, kernel_size, stride, in_ch
     value_temp = value % output_dimension_sqr
 
     row_number = int(((value_temp * stride) + (kernel_size - 1)) / input_dimension)
-    column_number = int(((((value % output_dimension) - 1) * stride) + kernel_size) % input_dimension) - 1
+    column_number = (
+        int(
+            ((((value % output_dimension) - 1) * stride) + kernel_size)
+            % input_dimension
+        )
+        - 1
+    )
     kernel_sqr = kernel_size * kernel_size
     out_chanel_index = int(value / output_single_channle_size) * kernel_sqr
 
@@ -38,30 +63,60 @@ def convolution_internal(value, value_temp, layer_id, kernel_size, stride, in_ch
         # if value % output_dimension_sqr == 0:
         #     value_temp = 0
         #     channel_row_number = 0
-        from_position_value_0 = column_number + (input_kernel_number * (input_dimension_sqr))
+        from_position_value_0 = column_number + (
+            input_kernel_number * (input_dimension_sqr)
+        )
         for row_loop in range(kernel_size):
-            from_position_value_1 = from_position_value_0 + (channel_row_number * input_dimension)
+            from_position_value_1 = from_position_value_0 + (
+                channel_row_number * input_dimension
+            )
             for column_loop in range(kernel_size):
 
-                weight_index = out_chanel_index + in_chanel_index + (row_loop * kernel_size) + column_loop
+                weight_index = (
+                    out_chanel_index
+                    + in_chanel_index
+                    + (row_loop * kernel_size)
+                    + column_loop
+                )
                 weight_value = member_weight[weight_index]
 
-                if weight_value <= 0: # Weights less hen threshold are already set zero.
+                if (
+                    weight_value <= 0
+                ):  # Weights less hen threshold are already set zero.
                     continue
 
                 from_position_value = from_position_value_1 + column_loop
 
                 if from_position_value in previous_positions.keys():
                     old_position = previous_positions[from_position_value]
-                    graph_append(GraphClass(old_position, layer_id, old_position, to_node, weight_value))
+                    graph_append(
+                        GraphClass(
+                            old_position, layer_id, old_position, to_node, weight_value
+                        )
+                    )
 
                 else:
                     if from_position_value in from_position:
-                        graph_append(GraphClass(from_position[from_position_value], layer_id,
-                                                from_position[from_position_value], to_node, weight_value))
+                        graph_append(
+                            GraphClass(
+                                from_position[from_position_value],
+                                layer_id,
+                                from_position[from_position_value],
+                                to_node,
+                                weight_value,
+                            )
+                        )
                     else:
                         from_position[from_position_value] = self_node_id
-                        graph_append(GraphClass(self_node_id, layer_id, self_node_id, to_node, weight_value))
+                        graph_append(
+                            GraphClass(
+                                self_node_id,
+                                layer_id,
+                                self_node_id,
+                                to_node,
+                                weight_value,
+                            )
+                        )
                         self_node_id += 1
 
                 # print(str(from_position_value) + " to Poistion: " + str(value))
@@ -71,8 +126,16 @@ def convolution_internal(value, value_temp, layer_id, kernel_size, stride, in_ch
     # value_temp += 1
 
 
-def pooling_internal(value, layer_id, kernel_size, stride,
-                     input_dimension, output_dimension, graph_append, to_append):
+def pooling_internal(
+    value,
+    layer_id,
+    kernel_size,
+    stride,
+    input_dimension,
+    output_dimension,
+    graph_append,
+    to_append,
+):
 
     to_node = (value * kernel_size * kernel_size) + value
     self_node_id = to_node + 1
@@ -87,28 +150,41 @@ def pooling_internal(value, layer_id, kernel_size, stride,
     else:
         stride_for_increment = stride
 
-    from_position_value_1 = (column_number * stride_for_increment) + (row_number * input_dimension * stride)
+    from_position_value_1 = (column_number * stride_for_increment) + (
+        row_number * input_dimension * stride
+    )
     global previous_positions
 
     for column_loop in range(kernel_size):
         for row_loop in range(kernel_size):
 
-            from_position_value = from_position_value_1 + row_loop + (column_loop * input_dimension)
+            from_position_value = (
+                from_position_value_1 + row_loop + (column_loop * input_dimension)
+            )
 
             if from_position_value in previous_positions.keys():
                 old_position = previous_positions[from_position_value]
-                graph_append(GraphClass(old_position, layer_id, old_position, to_node, 0))
+                graph_append(
+                    GraphClass(old_position, layer_id, old_position, to_node, 0)
+                )
             else:
                 if from_position_value in from_position:
                     graph_append(
-                        GraphClass(from_position[from_position_value], layer_id,
-                                   from_position[from_position_value], to_node, 0))
+                        GraphClass(
+                            from_position[from_position_value],
+                            layer_id,
+                            from_position[from_position_value],
+                            to_node,
+                            0,
+                        )
+                    )
                 else:
                     from_position[from_position_value] = self_node_id
-                    graph_append(GraphClass(self_node_id, layer_id, self_node_id, to_node, 0))
+                    graph_append(
+                        GraphClass(self_node_id, layer_id, self_node_id, to_node, 0)
+                    )
                     self_node_id += 1
     del graph_append
-
 
 
 # from tqdm import tqdm
@@ -165,7 +241,6 @@ class GraphGenerator:
                 if lyr == self.__layer_id
             ]
             from_position = {}
-
 
         for graph in self.__graph_structure:
             add_edge_to_graph(
@@ -233,7 +308,9 @@ class GraphGenerator:
         output_single_channle_size = new_size_output / out_channels
 
         global previous_positions
-        temp_previous = [(c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1)]
+        temp_previous = [
+            (c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1)
+        ]
         previous_positions = dict(temp_previous)
         del temp_previous
 
@@ -242,16 +319,25 @@ class GraphGenerator:
 
         print(time.ctime())
         print(os.cpu_count())
-        Parallel(n_jobs=os.cpu_count(), prefer="threads", require='sharedmem')(delayed(convolution_internal)
-                                                                               (i, i, self.__layer_id, kernel_size,
-                                                                                stride,
-                                                                                in_channels, input_dimension,
-                                                                                output_dimension, input_dimension_sqr,
-                                                                                output_dimension_sqr,
-                                                                                output_single_channle_size,
-                                                                                previous_positions,
-                                                                                graph_append, to_append) for i in
-                                                                               tqdm(range(new_size_output)))
+        Parallel(n_jobs=1, prefer="threads", require="sharedmem")(
+            delayed(convolution_internal)(
+                i,
+                i,
+                self.__layer_id,
+                kernel_size,
+                stride,
+                in_channels,
+                input_dimension,
+                output_dimension,
+                input_dimension_sqr,
+                output_dimension_sqr,
+                output_single_channle_size,
+                previous_positions,
+                graph_append,
+                to_append,
+            )
+            for i in tqdm(range(new_size_output))
+        )
         previous_positions.clear()
         print(time.ctime())
         print("Convolution layer Completed.")
@@ -288,19 +374,27 @@ class GraphGenerator:
         from_position.clear()
 
         global previous_positions
-        temp_previous = [(c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1)]
+        temp_previous = [
+            (c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1)
+        ]
         previous_positions = dict(temp_previous)
         del temp_previous
 
         print(time.ctime())
         print(os.cpu_count())
-        Parallel(n_jobs=os.cpu_count(), prefer="threads", require='sharedmem')(delayed(pooling_internal)
-                                                                               (i, self.__layer_id, kernel_size,
-                                                                                stride, input_dimension,
-                                                                                output_dimension,
-
-                                                                                graph_append, to_append) for i in
-                                                                               tqdm(range(new_size_output)))
+        Parallel(n_jobs=os.cpu_count(), prefer="threads", require="sharedmem")(
+            delayed(pooling_internal)(
+                i,
+                self.__layer_id,
+                kernel_size,
+                stride,
+                input_dimension,
+                output_dimension,
+                graph_append,
+                to_append,
+            )
+            for i in tqdm(range(new_size_output))
+        )
 
         print(time.ctime())
         previous_positions.clear()
@@ -330,7 +424,9 @@ class GraphGenerator:
         to_counter = 0
 
         global previous_positions
-        temp_previous = [(c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1)]
+        temp_previous = [
+            (c, n) for lyr, c, n in self.__to_position if lyr == (self.__layer_id - 1)
+        ]
         previous_positions = dict(temp_previous)
         del temp_previous
 
@@ -347,7 +443,15 @@ class GraphGenerator:
 
                     if (counter - 1) in previous_positions.keys():
                         old_position = previous_positions[(counter - 1)]
-                        graph_append(GraphClass(old_position, self.__layer_id, old_position, to_node, weight_value))
+                        graph_append(
+                            GraphClass(
+                                old_position,
+                                self.__layer_id,
+                                old_position,
+                                to_node,
+                                weight_value,
+                            )
+                        )
                     else:
                         if (
                             counter in from_position
