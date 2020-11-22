@@ -1,10 +1,11 @@
-# deepstruct - tools for neural network graph topology analysis [![PyPI version](https://badge.fury.io/py/deepstruct.svg)](https://badge.fury.io/py/deepstruct) ![Tests](https://github.com/innvariant/deepstruct/workflows/Tests/badge.svg)  [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
+# deepstruct - tools for neural network graph topology analysis [![PyPI version](https://badge.fury.io/py/deepstruct.svg)](https://badge.fury.io/py/deepstruct) ![Tests](https://github.com/innvariant/deepstruct/workflows/Tests/badge.svg) [![Documentation Status](https://readthedocs.org/projects/deepstruct/badge/?version=latest)](https://deepstruct.readthedocs.io/en/latest/?badge=latest) [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 Tools for fusing machine learning and graph theory.
 We are fascinated with the interplay of end-to-end learnable, locally restricted models and their graph theoretical properties.
 Searching for evidence of the structural prior hypothesis.
 Interested in pruning, neural architecture search or learning theory in general?
 
-**Note** we are currently renaming *deepstruct* to *deepstruct* due to naming collisions and better semantical wording.
+See examples below or [read the docs](https://deepstruct.readthedocs.io).
+
 
 ## Installation
 Via *poetry* (**recommended** for projects) using PyPi:

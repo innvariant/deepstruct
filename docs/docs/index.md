@@ -1,17 +1,18 @@
-# Welcome to MkDocs
+# deepstruct
+Documentation for [deepstruct on github](https://github.com/innvariant/deepstruct).
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+### Notes
+- **2020-11-22** currently documenting the package
 
-## Commands
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+## Introduction
 
-## Project layout
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+## A simple example
+
+
+## Available Models
+
+
+## Artificial Datasets
+
