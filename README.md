@@ -57,9 +57,9 @@ In a probabilistic sense, one can interprete structure as a prior to the model a
 
 
 ## Sparse Neural Network implementations
-![Sparse Network Connectivity on zeroth order with a masked deep feed-forward neural network](doc/masked-deep-ffn.png)
-![Sparse Network Connectivity on zeroth order with a masked deep neural network with skip-layer connections](doc/masked-deep-dan.png)
-![Sparse Network Connectivity on second order with a masked deep cell-based neural network](doc/masked-deep-cell-dan.png)
+![Sparse Network Connectivity on zeroth order with a masked deep feed-forward neural network](docs/masked-deep-ffn.png)
+![Sparse Network Connectivity on zeroth order with a masked deep neural network with skip-layer connections](docs/masked-deep-dan.png)
+![Sparse Network Connectivity on second order with a masked deep cell-based neural network](docs/masked-deep-cell-dan.png)
 
 **What's contained in deepstruct?**
 - ready-to-use models in pytorch for learning instances on common (supervised/unsupervised) datasets from which a structural analysis is possible
@@ -139,7 +139,7 @@ model.forward(random_input)
 
 
 # Artificial PyTorch Datasets
-![A custom artificial landscape Stier2020B for testing function approximation](doc/artificial-landscape-approximation.png)
+![A custom artificial landscape Stier2020B for testing function approximation](docs/artificial-landscape-approximation.png)
 We provide some simple utilities for supporting the quite fascinating area of artificial function approximation.
 Like polynomials, neural networks are universal function approximators on bounded intervals of compact spaces.
 To test, you can easily define a function of any finite dimension:

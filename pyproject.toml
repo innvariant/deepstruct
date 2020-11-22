@@ -37,6 +37,7 @@ pytest = "^3.0"
 pytest-mock = "^3.0.0"
 pyfakefs = "^4.0.2"
 torchvision = "^0.6.1"
+mkdocs = "^1.1.2"
 
 [tool.isort]
 profile = "black"
