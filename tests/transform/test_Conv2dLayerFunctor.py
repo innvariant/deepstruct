@@ -4,7 +4,7 @@ import torch
 from deepstruct.transform import Conv2dLayerFunctor
 
 
-def no_test_conv_simple():
+def test_conv_simple():
     # Arrange
     input_width = 5
     input_height = 5
@@ -26,27 +26,17 @@ def no_test_conv_simple():
 
     # Assert
     assert result.last_layer_size == number_output_features
-    print(result.first_layer_size)
-    print(result.last_layer_size)
-    print(len(result.edges))
-    print(
-        [
-            v
-            for v in result.nodes
-            if result.get_layer(v) != 0 and result.in_degree(v) == 0
-        ]
-    )
-    print(
-        [
-            v
-            for v in result.nodes
-            if result.get_layer(v) != 1 and result.out_degree(v) == 0
-        ]
-    )
     # TODO: check connectivity
 
+    """import networkx as nx
+    from networkx.drawing.nx_agraph import write_dot, graphviz_layout
+    import matplotlib.pyplot as plt
+    pos = graphviz_layout(result, prog='dot')
+    nx.draw(result, pos, with_labels=True, arrows=True)
+    plt.show()"""
 
-def no_test_conv_nonsquare_kernel():
+
+def test_conv_nonsquare_kernel():
     # Arrange
     input_width = 20
     input_height = 10
@@ -71,7 +61,7 @@ def no_test_conv_nonsquare_kernel():
     assert result.last_layer_size == number_output_features
 
 
-def no_test_conv_multiple_configs():
+def test_conv_multiple_configs():
     # Arrange
     input_width = 10
     input_height = 10
@@ -105,3 +95,27 @@ def no_test_conv_multiple_configs():
 
         # Assert
         assert result.last_layer_size == number_output_features
+
+
+def test_realistic_convolution():
+    # Arrange
+    input_width = 100  # 100x100 is already quite a huge graph
+    input_height = 100
+    channels_in = 3
+    kernel_size = (5, 5)
+    model = torch.nn.Conv2d(
+        in_channels=channels_in, out_channels=2, kernel_size=kernel_size, stride=1
+    )
+    model.weight[
+        :, :
+    ] += 10  # Make sure each weight is large enough so none is getting "pruned"
+    output = model.forward(torch.rand(size=(1, channels_in, input_height, input_width)))
+    number_output_features = np.prod(output.shape)
+
+    functor = Conv2dLayerFunctor(input_width, input_height, threshold=0.01)
+
+    # Act
+    result = functor.transform(model)
+
+    # Assert
+    assert result.last_layer_size == number_output_features
