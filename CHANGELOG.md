@@ -4,6 +4,8 @@
 * new minimal version requirement is python 3.7
 * introduced interface for "functors" which transform a nn.Module into a directed acyclic graph
 * created a first functor for Linear and MaskedLinear layers
+* a graph transform class passes a random input through a generic module and can transform it into a graph given that it consists of linear or conv2d layers (first tests added)
+* added mkdocs to provide an initial documentation skeleton
 
 ## 0.6
 * introduced *BaseRecurrentLayer*, *MaskedRecurrentLayer*, *MaskedGRULayer*, *MaskedLSTMLayer*
