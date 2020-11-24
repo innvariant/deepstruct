@@ -1,5 +1,7 @@
 import itertools
 
+from functools import partial
+
 import numpy as np
 import torch
 
@@ -82,10 +84,30 @@ class LinearLayerFunctor(ForgetfulFunctor):
 
 
 class Conv2dLayerFunctor(ForgetfulFunctor):
-    def __init__(self, input_width: int, input_height: int, threshold: float = None):
+    def __init__(
+        self, input_width: int = 0, input_height: int = 0, threshold: float = None
+    ):
         self._input_width = input_width
         self._input_height = input_height
         self._threshold = threshold
+
+    @property
+    def width(self):
+        return self._input_width
+
+    @property
+    def height(self):
+        return self._input_height
+
+    @width.setter
+    def width(self, width: int):
+        assert width > 0
+        self._input_width = width
+
+    @height.setter
+    def height(self, height: int):
+        assert height > 0
+        self._input_height = height
 
     def transform(self, model: torch.nn.Module) -> LabeledDAG:
         # TODO does not respect sparsity in kernel currently
@@ -94,6 +116,9 @@ class Conv2dLayerFunctor(ForgetfulFunctor):
             1,
             1,
         ), "Currently dilation is not considered in this implementation"
+        assert (
+            self.width > 0 and self.height > 0
+        ), "You need to specify input width and height for this functor."
 
         channels_in = model.in_channels
         channels_out = model.out_channels
@@ -204,43 +229,85 @@ class Conv2dLayerFunctor(ForgetfulFunctor):
         return isinstance(model, torch.nn.Conv2d)
 
 
+def forward_capture_shape(obj, orig_forward, input, **kwargs):
+    # print("forward_capture_shape()")
+    # print("input", input)
+    # print(input.shape)
+    obj._deepstruct_input_shape = input.shape
+    return orig_forward(input)
+
+
 class GraphTransform(ForgetfulFunctor):
     """
     Standard zeroth-order transformation from neural networks to graphs.
     """
 
-    def __init__(self, initial_shape):
-        self._initial_shape = initial_shape
+    def __init__(self, random_input: torch.Tensor):
+        self.random_input = random_input
 
     @property
-    def initial_shape(self):
-        return self._initial_shape
+    def random_input(self):
+        return self._random_input
 
-    @initial_shape.setter
-    def initial_shape(self, shape):
-        self._initial_shape = shape
+    @random_input.setter
+    def random_input(self, random_input: torch.Tensor):
+        assert random_input is not None
+        assert hasattr(random_input, "shape")
+        self._random_input = random_input
 
-    def transform(self, model: torch.nn):
+    def _punch(self, module: torch.nn.Module):
+        for child in module.children():
+            self._punch(child)
+        setattr(
+            module, "forward", partial(forward_capture_shape, module, module.forward)
+        )
+        return module
+
+    def _transform_partial(self, module: torch.nn.Module, graph: LabeledDAG):
+        assert graph is not None
+        functor_conv = Conv2dLayerFunctor()
         functor_linear = LinearLayerFunctor(threshold=0.01)
+
+        partial = None
+        if isinstance(module, torch.nn.ModuleList):
+            # partial = self.transform(module)
+            # graph.append(partial)
+            for child in module:
+                graph = self._transform_partial(child, graph)
+        elif isinstance(module, torch.nn.Linear):
+            partial = functor_linear.transform(module)
+            graph.append(partial)
+        elif isinstance(module, torch.nn.Conv2d):
+            width = module._deepstruct_input_shape[-1]
+            height = module._deepstruct_input_shape[-2]
+            print("captured width/height", (width, height))
+            functor_conv.width = width
+            functor_conv.height = height
+            partial = functor_conv.transform(module)
+            print("partial conv", partial.nodes)
+            print("partial conv len(lay0) =", partial.get_layer_size(0))
+            print("partial conv len(lay1) =", partial.get_layer_size(1))
+            print("partial conv edges", len(partial.edges))
+            graph.append(partial)
+        else:
+            print("Warning: ignoring sub-module of type", type(module))
+        print("Transformed module", type(module))
+        print("graph nodes (len=%s)" % len(graph.nodes), graph.nodes)
+        if partial is not None:
+            print("partial nodes (len=%s)" % len(partial.nodes), partial.nodes)
+
+        return graph
+
+    def transform(self, model: torch.nn.Module):
         graph = LabeledDAG()
-        shape_out = self.initial_shape
-        graph.add_vertices(np.prod(shape_out), layer=0)
+
+        self._punch(model)
+        model.forward(self.random_input)
+        graph.add_vertices(np.prod(self.random_input.shape), layer=0)
+
         for module in model.children():
-            if isinstance(module, torch.nn.ModuleList):
-                partial = self.transform(module)
-                graph.append(partial)
-            elif isinstance(module, torch.nn.Linear):
-                partial = functor_linear.transform(module)
-                graph.append(partial)
-                shape_out = module.out_features
-            elif isinstance(module, torch.nn.Conv2d):
-                assert shape_out is not None
-                print(shape_out)
-                functor_conv = Conv2dLayerFunctor(shape_out[0], shape_out[1])
-                partial = functor_conv(module)
-                graph.append(partial)
-            else:
-                raise ValueError("Unknown module type")
+            graph = self._transform_partial(module, graph)
+
         return graph
 
     def applies(self, model: torch.nn.Module):

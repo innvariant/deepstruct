@@ -254,8 +254,10 @@ class LabeledDAG(LayeredGraph):
         return self._get_layer_index()[1][layer]
 
     def index_in_layer(self, vertex):
-        match = np.where(self.get_vertices(self.get_layer(vertex)) == vertex)
-        return match[0][0] if len(match) > 0 else None
+        layer_vertices = self.get_vertices(self.get_layer(vertex))
+        return layer_vertices.index(vertex)
+        """match = np.where(self.get_vertices(self.get_layer(vertex)) == vertex)
+        return match[0][0] if len(match) > 0 else None"""
 
     def add_vertex(self, layer: int = 0):
         assert layer >= 0
