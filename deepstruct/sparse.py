@@ -500,13 +500,12 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         """
         super().__init__(in_feature, out_features, bias)
 
+        self._masks_as_params = True if mask_as_params else False
         if mask_as_params:
             # Mask as a parameter could still be updated through optimization, e.g. by momentum
             # For the purpose of actually considering them in optimization, you can enable requires_grad=True on them
-            self._mask = nn.Parameter(
-                torch.ones((out_features, in_feature), dtype=torch.bool),
-                requires_grad=False,
-            )
+            #self._mask = nn.Parameter(torch.ones((out_features, in_feature, 2), dtype=torch.float32), requires_grad=False)
+            self._mask = nn.Parameter(torch.ones((out_features, in_feature, 2), dtype=torch.float32), requires_grad=False)
         else:
             # Masks as buffers are considered in persistence, putting the computation to GPU or changing its types
             # but are not contained in the set of parameters for optimization
@@ -518,11 +517,20 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
 
     @property
     def mask(self):
-        return self._mask
+        return self._mask if not self._masks_as_params else torch.argmax(torch.softmax(self._mask, dim=2), dim=2)
 
     @mask.setter
     def mask(self, mask):
-        self._mask = mask
+        """
+        :param mask: Binary mask of shape (out_feature, in_feature)
+        :return:
+        """
+        if self._masks_as_params:
+            mask_inverted = 1-mask
+            self._mask[:, :, 0] = mask_inverted*0.9 + mask * 0.1
+            self._mask[:, :, 1] = mask*0.9 + mask_inverted * 0.1
+        else:
+            self._mask = mask
 
     @deprecated(
         reason="Accessing mask should be done via the property accessor .mask",

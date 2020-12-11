@@ -15,7 +15,7 @@ def test_set_mask_explicitly_success():
     mask[0, 1] = 1
     mask[1, 2] = 1
 
-    layer.set_mask(mask)
+    layer.mask = mask
 
     assert np.all(np.equal(np.array(mask), np.array(layer.mask)))
 
@@ -64,3 +64,65 @@ def test_random_input_success():
     output = model(input)
 
     assert output.numel() == output_size
+
+
+def test_initialize_random_parameterizable_mask_success():
+    # Arrange - initialize a masked layer and randomize its mask
+    input_size = 20
+    output_size = 10
+    layer = deepstruct.sparse.MaskedLinearLayer(input_size, output_size, mask_as_params=True)
+    initial_state = np.copy(layer.mask)
+
+    # Act
+    layer.apply(deepstruct.pruning.set_random_masks)
+
+    # Assert
+    assert (np.array(layer.mask) != initial_state).any()
+
+
+def test_paramterized_masks_contained_in_model_params():
+    # Arrange - initialize a masked layer and randomize its mask
+    name_param = "_mask"
+    input_size = 5
+    output_size = 7
+    layer = deepstruct.sparse.MaskedLinearLayer(input_size, output_size, mask_as_params=True)
+
+    params = {name: p for name, p in layer.named_parameters()}
+
+    assert len(list(layer.parameters())) == 3
+    assert name_param in params
+    assert params[name_param].numel() == 2*input_size*output_size
+
+
+def test_nonparamterized_masks_not_contained_in_model_params():
+    # Arrange - initialize a masked layer and randomize its mask
+    name_param = "_mask"
+    input_size = 5
+    output_size = 7
+    layer = deepstruct.sparse.MaskedLinearLayer(input_size, output_size, mask_as_params=False)
+
+    params = {name: p for name, p in layer.named_parameters()}
+
+    assert name_param not in params
+    assert len(list(layer.parameters())) == 2
+
+
+def test_paramterized_masks_success():
+    # Arrange - initialize a masked layer and randomize its mask
+    input_size = 5
+    output_size = 7
+    layer = deepstruct.sparse.MaskedLinearLayer(input_size, output_size, mask_as_params=True)
+    layer.apply(deepstruct.pruning.set_random_masks)
+    initial_alpha_mask = np.copy(layer._mask)
+    optimizer = torch.optim.Adam(layer.parameters(), lr=0.1, weight_decay=0.1)
+
+    # Act
+    for _ in range(10):
+        optimizer.zero_grad()
+        loss = torch.sum(torch.abs(torch.cat([p.flatten() for p in layer.parameters()])))
+        loss.backward()
+        optimizer.step()
+
+    # Assert TODO
+    assert layer._mask.size() == initial_alpha_mask.shape
+    #assert (np.array(layer._mask) != initial_alpha_mask).any()
