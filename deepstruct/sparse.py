@@ -8,6 +8,7 @@ from torch.autograd import Variable
 
 from deepstruct.graph import CachedLayeredGraph
 from deepstruct.graph import LayeredGraph
+from deprecated import deprecated
 
 
 class DeepCellDAN(nn.Module):
@@ -484,7 +485,14 @@ def prunable_layers_with_name(network):
 
 
 class MaskedLinearLayer(nn.Linear, MaskableModule):
-    def __init__(self, in_feature, out_features, bias=True, keep_layer_input=False):
+    def __init__(
+        self,
+        in_feature,
+        out_features,
+        bias=True,
+        keep_layer_input=False,
+        mask_as_params: bool = False,
+    ):
         """
         :param in_feature:          The number of features that are inserted in the layer.
         :param out_features:        The number of features that are returned by the layer.
@@ -492,15 +500,41 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         """
         super().__init__(in_feature, out_features, bias)
 
-        self.register_buffer(
-            "mask", torch.ones((out_features, in_feature), dtype=torch.bool)
-        )
+        if mask_as_params:
+            # Mask as a parameter could still be updated through optimization, e.g. by momentum
+            # For the purpose of actually considering them in optimization, you can enable requires_grad=True on them
+            self._mask = nn.Parameter(
+                torch.ones((out_features, in_feature), dtype=torch.bool),
+                requires_grad=False,
+            )
+        else:
+            # Masks as buffers are considered in persistence, putting the computation to GPU or changing its types
+            # but are not contained in the set of parameters for optimization
+            self.register_buffer(
+                "mask", torch.ones((out_features, in_feature), dtype=torch.bool)
+            )
         self.keep_layer_input = keep_layer_input
         self.layer_input = None
 
+    @property
+    def mask(self):
+        return self._mask
+
+    @mask.setter
+    def mask(self, mask):
+        self._mask = mask
+
+    @deprecated(
+        reason="Accessing mask should be done via the property accessor .mask",
+        version="0.8.0",
+    )
     def get_mask(self):
         return self.mask
 
+    @deprecated(
+        reason="Accessing mask should be done via the property accessor .mask",
+        version="0.8.0",
+    )
     def set_mask(self, mask):
         self.mask = Variable(mask)
 
@@ -524,6 +558,10 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         )
         self.mask[torch.where(abs(self.weight) < theta)] = False
 
+    @deprecated(
+        reason="Unnecessary additional accessor for the modules weight. Use the property accessor '.weight' of nn.Linear",
+        version="0.8.0",
+    )
     def get_weight(self):
         return self.weight
 
