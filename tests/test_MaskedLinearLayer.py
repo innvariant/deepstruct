@@ -120,19 +120,20 @@ def test_paramterized_masks_success():
     layer = deepstruct.sparse.MaskedLinearLayer(
         input_size, output_size, mask_as_params=True
     )
-    layer.apply(deepstruct.pruning.set_random_masks)
-    initial_alpha_mask = np.copy(layer._mask)
+    # layer.apply(deepstruct.pruning.set_random_masks)
+    print(layer.mask)
+    initial_alpha_mask = layer._mask.clone().detach().cpu().numpy()
     optimizer = torch.optim.Adam(layer.parameters(), lr=0.1, weight_decay=0.1)
 
     # Act
     for _ in range(10):
         optimizer.zero_grad()
-        loss = torch.sum(
-            torch.abs(torch.cat([p.flatten() for p in layer.parameters()]))
-        )
+        loss = torch.sum(torch.abs(layer._mask[:, :, 1]))
         loss.backward()
         optimizer.step()
 
-    # Assert TODO
+    # Assert<
     assert layer._mask.size() == initial_alpha_mask.shape
-    # assert (np.array(layer._mask) != initial_alpha_mask).any()
+    assert (layer._mask.clone().detach().cpu().numpy() != initial_alpha_mask).any()
+    print(layer._mask)
+    print(layer.mask)

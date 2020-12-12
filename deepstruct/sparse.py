@@ -498,25 +498,36 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         :param out_features:        The number of features that are returned by the layer.
         :param bias:                Iff each neuron in the layer should have a bias unit as well.
         """
-        super().__init__(in_feature, out_features, bias)
 
         self._masks_as_params = True if mask_as_params else False
+        super().__init__(in_feature, out_features, bias)
+
         if mask_as_params:
             # Mask as a parameter could still be updated through optimization, e.g. by momentum
-            # For the purpose of actually considering them in optimization, you can enable requires_grad=True on them
+            # For the purpose of not considering them in optimization, you can set requires_grad=False on them
             # self._mask = nn.Parameter(torch.ones((out_features, in_feature, 2), dtype=torch.float32), requires_grad=False)
+            # self._mask = nn.Parameter(torch.Tensor(out_features, in_feature, 2))
             self._mask = nn.Parameter(
-                torch.ones((out_features, in_feature, 2), dtype=torch.float32),
-                requires_grad=False,
+                torch.ones((out_features, in_feature, 2), dtype=torch.float32)
             )
-        else:
+        elif not mask_as_params:
             # Masks as buffers are considered in persistence, putting the computation to GPU or changing its types
             # but are not contained in the set of parameters for optimization
             self.register_buffer(
-                "mask", torch.ones((out_features, in_feature), dtype=torch.bool)
+                "_mask", torch.ones((out_features, in_feature), dtype=torch.bool)
             )
         self.keep_layer_input = keep_layer_input
         self.layer_input = None
+
+    def reset_parameters(self, keep_mask=False):
+        super().reset_parameters()
+        if hasattr(self, "_mask") and self._masks_as_params and not keep_mask:
+            # self.mask = torch.round(torch.rand_like(self._mask))
+            self.mask = torch.ones_like(self.weight)
+        elif hasattr(self, "_mask") and not keep_mask:
+            # hasattr() is necessary because reset_parameters() is called in __init__ of Linear(), but buffer 'mask'
+            # may only be registered after super() call, thus 'mask' might not be defined as buffer / attribute, yet
+            self.mask = torch.ones(self.weight.size(), dtype=torch.bool)
 
     @property
     def mask(self):
@@ -533,9 +544,15 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         :return:
         """
         if self._masks_as_params:
+            # print("before setting", self._mask)
             mask_inverted = 1 - mask
-            self._mask[:, :, 0] = mask_inverted * 0.9 + mask * 0.1
-            self._mask[:, :, 1] = mask * 0.9 + mask_inverted * 0.1
+            alphas = torch.zeros_like(self._mask)
+            alphas[:, :, 0] = mask_inverted * 0.9 + mask * 0.1
+            alphas[:, :, 1] = mask * 0.9 + mask_inverted * 0.1
+            # self._mask[:, :, 0] = mask_inverted * 0.9 + mask * 0.1
+            # self._mask[:, :, 1] = mask * 0.9 + mask_inverted * 0.1
+            self._mask = nn.Parameter(alphas)
+            # print("after setting", self._mask)
         else:
             self._mask = mask
 
@@ -579,13 +596,6 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
     )
     def get_weight(self):
         return self.weight
-
-    def reset_parameters(self, keep_mask=False):
-        super().reset_parameters()
-        # hasattr() is necessary because reset_parameters() is called in __init__ of Linear(), but buffer 'mask'
-        # may only be registered after super() call, thus 'mask' might not be defined as buffer / attribute, yet
-        if hasattr(self, "mask") and not keep_mask:
-            self.mask = torch.ones(self.weight.size(), dtype=torch.bool)
 
     def forward(self, input):
         x = (
