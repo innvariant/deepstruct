@@ -198,7 +198,7 @@ class MaskedDeepDAN(MaskableModule):
                 ):
                     if structure.has_edge(source_vertex, target_vertex):
                         mask[target_idx][source_idx] = 1
-            layer.set_mask(mask)
+            layer.mask = mask
 
         skip_layers = []
         self._skip_targets = {}
@@ -224,7 +224,7 @@ class MaskedDeepDAN(MaskableModule):
                         ):
                             if structure.has_edge(source_vertex, target_vertex):
                                 mask[target_idx][source_idx] = 1
-                    skip_layer.set_mask(mask)
+                    skip_layer.mask = mask
 
                     skip_layers.append(skip_layer)
                     self._skip_targets[target_layer].append(

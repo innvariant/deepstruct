@@ -121,7 +121,7 @@ def test_paramterized_masks_success():
         input_size, output_size, mask_as_params=True
     )
     # layer.apply(deepstruct.pruning.set_random_masks)
-    print(layer.mask)
+    # print(layer.mask)
     initial_alpha_mask = layer._mask.clone().detach().cpu().numpy()
     optimizer = torch.optim.Adam(layer.parameters(), lr=0.1, weight_decay=0.1)
 
@@ -135,5 +135,3 @@ def test_paramterized_masks_success():
     # Assert<
     assert layer._mask.size() == initial_alpha_mask.shape
     assert (layer._mask.clone().detach().cpu().numpy() != initial_alpha_mask).any()
-    print(layer._mask)
-    print(layer.mask)
