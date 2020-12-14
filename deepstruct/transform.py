@@ -31,7 +31,7 @@ class LinearLayerFunctor(ForgetfulFunctor):
         if self._threshold is not None:
             model.recompute_mask()
 
-        return self.transform_mask(model.get_mask())
+        return self.transform_mask(model.mask)
 
     def transform_linear(self, model: torch.nn.Linear):
         assert (

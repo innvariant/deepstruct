@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-import deepstruct.deprecated
 import deepstruct.graph
 import deepstruct.sparse
 import deepstruct.util
