@@ -1,7 +1,10 @@
+import pickle
+
 import numpy as np
 import torch
 
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 
 class FuncDataset(Dataset):
@@ -18,8 +21,18 @@ class FuncDataset(Dataset):
         self._shape_input = shape_input
         self._data = None
 
-    def generate(self):
-        self._data = [self.sample() for _ in range(self._size)]
+    def generate(self, without_progress: bool = True):
+        self._data = []
+        has_length = hasattr(self._fn, "__len__")
+        fn_name = str(self._fn)
+        with tqdm(
+            total=self._size, desc="Generating samples", disable=without_progress
+        ) as pbar:
+            for ix in range(self._size):
+                self._data.append(self.sample())
+                if has_length:
+                    pbar.set_postfix(**{fn_name: len(self._fn)})
+                pbar.update()
 
     @property
     def sampler(self):
@@ -37,12 +50,34 @@ class FuncDataset(Dataset):
         codomain = self._fn(preimage_sample)
         return preimage_sample, codomain
 
+    def save(self, path_file):
+        with open(path_file, "wb") as handle:
+            pickle.dump(
+                {
+                    "size": self._size,
+                    "shape_input": self._shape_input,
+                    "data": self._data,
+                },
+                handle,
+            )
+
+    @staticmethod
+    def load(path_file):
+        with open(path_file, "rb") as handle:
+            meta = pickle.load(handle)
+        dataset = FuncDataset(
+            lambda: None, meta["size"], meta["shape_input"], lambda: None
+        )
+        dataset._data = meta["data"]
+        return dataset
+
     def __len__(self):
         return self._size
 
     def __getitem__(self, idx: int):
         if self._data is None:
             self.generate()
+        assert self._data is not None
 
         idx = idx + int(idx < 0) * len(self)
 

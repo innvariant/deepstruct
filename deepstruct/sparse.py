@@ -4,11 +4,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from deprecated import deprecated
 from torch.autograd import Variable
 
 from deepstruct.graph import CachedLayeredGraph
 from deepstruct.graph import LayeredGraph
-from deprecated import deprecated
 
 
 class DeepCellDAN(nn.Module):
