@@ -1,6 +1,12 @@
 import torch
 
+from deprecated import deprecated
 
+
+@deprecated(
+    reason="At best use a library such as pytorch ignite to not re-write learning loops.",
+    version="0.8.0",
+)
 def run_evaluation(test_loader, model, device):
     """
     Test the model on the tests data set provided by the tests loader.
@@ -25,6 +31,10 @@ def run_evaluation(test_loader, model, device):
         return 100 * correct / total
 
 
+@deprecated(
+    reason="At best use a library such as pytorch ignite to not re-write learning loops.",
+    version="0.8.0",
+)
 def train(train_loader, model, optimizer, criterion, device):
     """
     Train the model on the train data set with a loss function and and optimization algorithm.

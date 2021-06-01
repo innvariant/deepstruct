@@ -163,18 +163,25 @@ class MaskedDeepDAN(MaskableModule):
     A deep directed acyclic network model which is capable of masked layers and masked skip-layer connections.
     """
 
-    def __init__(self, input_size, num_classes, structure: LayeredGraph):
+    def __init__(
+        self,
+        size_input,
+        size_output: int,
+        structure: LayeredGraph,
+        use_layer_norm: bool = False,
+    ):
         super(MaskedDeepDAN, self).__init__()
 
         self._structure = structure
+        self._use_layer_norm = True if use_layer_norm else False
         assert structure.num_layers > 0
 
         # Multiple dimensions for input size are flattened out
-        if type(input_size) is tuple or type(input_size) is torch.Size:
-            input_size = np.prod(input_size)
-        input_size = int(input_size)
+        if type(size_input) is tuple or type(size_input) is torch.Size:
+            size_input = np.prod(size_input)
+        size_input = int(size_input)
 
-        self.layer_first = MaskedLinearLayer(input_size, structure.first_layer_size)
+        self.layer_first = MaskedLinearLayer(size_input, structure.first_layer_size)
         self.layers_main_hidden = nn.ModuleList(
             [
                 MaskedLinearLayer(
@@ -184,6 +191,10 @@ class MaskedDeepDAN(MaskableModule):
                 for cur_lay in structure.layers[1:]
             ]
         )
+
+        self._layers_normalization = []
+        if self._use_layer_norm:
+            self._layers_normalization.append(nn.LayerNorm(structure.get_layer_size(0)))
 
         for layer_idx, layer in zip(structure.layers[1:], self.layers_main_hidden):
             mask = torch.zeros(
@@ -199,6 +210,13 @@ class MaskedDeepDAN(MaskableModule):
                     if structure.has_edge(source_vertex, target_vertex):
                         mask[target_idx][source_idx] = 1
             layer.mask = mask
+
+            if self._use_layer_norm:
+                self._layers_normalization.append(
+                    nn.LayerNorm(structure.get_layer_size(layer_idx))
+                )
+
+        self.layer_normalizations = nn.ModuleList(self._layers_normalization)
 
         skip_layers = []
         self._skip_targets = {}
@@ -232,9 +250,41 @@ class MaskedDeepDAN(MaskableModule):
                     )
         self.layers_skip_hidden = nn.ModuleList(skip_layers)
 
-        self.layer_out = MaskedLinearLayer(structure.last_layer_size, num_classes)
+        self.layer_out = MaskedLinearLayer(structure.last_layer_size, size_output)
         self.activation = nn.ReLU()
 
+    def forward(self, input):
+        # input : [batch_size, ?, ?, ..], e.g. [100, 1, 28, 28] or [100, 3, 32, 32]
+        x = input.flatten(start_dim=1)
+        # x: [batch_size, ?*?*..], e.g. [100, 784] or [100, 3072]
+        last_output = self.activation(self.layer_first(x))
+        layer_results = {0: last_output}
+        for layer, layer_idx in zip(
+            self.layers_main_hidden, self._structure.layers[1:]
+        ):
+            # Apply directly layer transformation
+            out_layer = layer(last_output)
+            if self._use_layer_norm:
+                out_layer = self._layers_normalization[layer_idx](out_layer)
+            out = self.activation(out_layer)
+
+            # Sum up all additional layer transformations from skip-connections
+            if layer_idx in self._skip_targets:
+                for skip_target in self._skip_targets[layer_idx]:
+                    source_layer = skip_target["layer"]
+                    source_idx = skip_target["source"]
+
+                    out += self.activation(source_layer(layer_results[source_idx]))
+
+            layer_results[layer_idx] = out  # copy?
+            last_output = out
+
+        return self.layer_out(last_output)
+
+    @deprecated(
+        reason="Generating a modules graph structure will be handled from outside through a functor object.",
+        version="0.8.0",
+    )
     def generate_structure(self, include_input=False, include_output=False):
         structure = CachedLayeredGraph()
 
@@ -356,29 +406,6 @@ class MaskedDeepDAN(MaskableModule):
 
         return structure
 
-    def forward(self, input):
-        # input : [batch_size, ?, ?, ..], e.g. [100, 1, 28, 28] or [100, 3, 32, 32]
-        x = input.flatten(start_dim=1)
-        # x: [batch_size, ?*?*..], e.g. [100, 784] or [100, 3072]
-        last_output = self.activation(self.layer_first(x))
-        layer_results = {0: last_output}
-        for layer, layer_idx in zip(
-            self.layers_main_hidden, self._structure.layers[1:]
-        ):
-            out = self.activation(layer(last_output))
-
-            if layer_idx in self._skip_targets:
-                for skip_target in self._skip_targets[layer_idx]:
-                    source_layer = skip_target["layer"]
-                    source_idx = skip_target["source"]
-
-                    out += self.activation(source_layer(layer_results[source_idx]))
-
-            layer_results[layer_idx] = out  # copy?
-            last_output = out
-
-        return self.layer_out(last_output)
-
 
 class MaskedDeepFFN(MaskableModule):
     """
@@ -387,36 +414,42 @@ class MaskedDeepFFN(MaskableModule):
     This representation is suitable for feed-forward sparse networks, probably with density 0.5 and above per layer.
     """
 
-    def __init__(self, input_size, num_classes, hidden_layers: list):
+    def __init__(
+        self, size_input, size_output, hidden_layers: list, use_layer_norm: bool = False
+    ):
         super(MaskedDeepFFN, self).__init__()
         assert len(hidden_layers) > 0
+        self._activation = nn.ReLU()
 
         # Multiple dimensions for input size are flattened out
-        if type(input_size) is tuple or type(input_size) is torch.Size:
-            input_size = np.prod(input_size)
-        input_size = int(input_size)
+        if type(size_input) is tuple or type(size_input) is torch.Size:
+            size_input = np.prod(size_input)
+        size_input = int(size_input)
 
-        self.layer_first = MaskedLinearLayer(input_size, hidden_layers[0])
-        self.layers_hidden = nn.ModuleList(
-            [
-                MaskedLinearLayer(hidden_layers[lay], hid)
-                for lay, hid in enumerate(hidden_layers[1:])
-            ]
-        )
-        self.layer_out = MaskedLinearLayer(hidden_layers[-1], num_classes)
-        self.activation = nn.ReLU()
+        self._layer_first = MaskedLinearLayer(size_input, hidden_layers[0])
+        self._layers_hidden = torch.nn.ModuleList()
+        for cur_lay, size_h in enumerate(hidden_layers[1:]):
+            self._layers_hidden.append(
+                MaskedLinearLayer(hidden_layers[cur_lay], size_h)
+            )
 
+            if use_layer_norm:
+                self._layers_hidden.append(torch.nn.LayerNorm(size_h))
+
+            self._layers_hidden.append(self._activation)
+
+        self._layer_out = MaskedLinearLayer(hidden_layers[-1], size_output)
+
+    @deprecated(
+        reason="Generating a modules graph structure will be handled from outside through a functor object.",
+        version="0.8.0",
+    )
     def generate_structure(self, include_input=False, include_output=False):
-        """
-
-        :param include_input:
-        :param include_output:
-        :rtype : LayeredGraph
-        :return:
-        """
         structure = CachedLayeredGraph()
 
         def add_edges(structure, layer, offset_source):
+            if not isinstance(layer, MaskedLinearLayer):
+                return offset_source
             offset_target = offset_source + layer.mask.shape[1]
             for source_node_idx, source_node in enumerate(range(layer.mask.shape[1])):
                 for target_node_idx, target_node in enumerate(
@@ -430,32 +463,24 @@ class MaskedDeepFFN(MaskableModule):
 
         offset_source = 0
         if include_input:
-            offset_source = add_edges(structure, self.layer_first, 0)
+            offset_source = add_edges(structure, self._layer_first, 0)
 
-        for layer in self.layers_hidden:
+        for layer in self._layers_hidden:
             offset_source = add_edges(structure, layer, offset_source)
 
         if include_output:
-            add_edges(structure, self.layer_out, offset_source)
+            add_edges(structure, self._layer_out, offset_source)
 
         return structure
 
     def forward(self, input):
         # input : [batch_size, ?, ?, ..], e.g. [100, 1, 28, 28] or [100, 3, 32, 32]
-        out = self.activation(
-            self.layer_first(input.flatten(start_dim=1))
+        out = self._activation(
+            self._layer_first(input.flatten(start_dim=1))
         )  # [B, n_hidden_1]
-        for layer in self.layers_hidden:
-            out = self.activation(layer(out))
-        return self.layer_out(out)  # [B, n_out]
-
-    def to(self, *args, **kwargs):
-        super().to(*args, **kwargs)
-        self.layer_first.to(*args, **kwargs)
-        for idx, h in enumerate(self.layers_hidden):
-            self.layers_hidden[idx] = self.layers_hidden[idx].to(*args, **kwargs)
-        self.layer_out.to(*args, **kwargs)
-        return self
+        for layer in self._layers_hidden:
+            out = layer(out)
+        return self._layer_out(out)  # [B, n_out]
 
 
 def maskable_layers(network):

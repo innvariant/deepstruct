@@ -79,3 +79,27 @@ def test_deep_ffn():
     pos = graphviz_layout(result, prog='dot')
     nx.draw(result, pos, with_labels=True, arrows=True)
     plt.show()"""
+
+
+def test_deep_ffn2():
+    # Arrange
+    # a linear module with larger input than its output
+    shape_input = (50,)
+    layers = [100] * 100
+    output_size = 10
+    model = deepstruct.sparse.MaskedDeepFFN(shape_input, output_size, layers)
+    for layer in deepstruct.sparse.maskable_layers(model):
+        layer.weight[:, :] += 1  # make sure everything is fully connected
+
+    functor = GraphTransform(torch.randn((1,) + shape_input))
+
+    # Act
+    result = functor.transform(model)
+
+    assert len(result.nodes) == shape_input[0] + sum(layers) + output_size
+    assert (
+        len(result.edges)
+        == shape_input[0] * layers[0]
+        + sum(l1 * l2 for l1, l2 in zip(layers[0:-1], layers[1:]))
+        + layers[-1] * output_size
+    )
