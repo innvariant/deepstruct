@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deepstruct"
-version = "0.7.0"
+version = "0.8.0"
 description = ""
 authors = [
     "Julian Stier <julian.stier@uni-passau.de>"
@@ -18,7 +18,7 @@ homepage = "https://github.com/innvariant/deepstruct"
 repository = "https://github.com/innvariant/deepstruct"
 documentation = "https://deepstruct.readthedocs.io"
 
-keywords = ["neural network", "sparsity", "machine learning", "inference", "training"]
+keywords = ["neural network", "sparsity", "machine learning", "structure", "graph", "training"]
 
 [tool.poetry.dependencies]
 python = ">=3.7"
