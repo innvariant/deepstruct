@@ -31,7 +31,7 @@ class LinearLayerFunctor(ForgetfulFunctor):
         if self._threshold is not None:
             model.recompute_mask()
 
-        return self.transform_mask(model.get_mask())
+        return self.transform_mask(model.mask)
 
     def transform_linear(self, model: torch.nn.Linear):
         assert (
@@ -280,21 +280,21 @@ class GraphTransform(ForgetfulFunctor):
         elif isinstance(module, torch.nn.Conv2d):
             width = module._deepstruct_input_shape[-1]
             height = module._deepstruct_input_shape[-2]
-            print("captured width/height", (width, height))
+            # print("captured width/height", (width, height))
             functor_conv.width = width
             functor_conv.height = height
             partial = functor_conv.transform(module)
-            print("partial conv", partial.nodes)
-            print("partial conv len(lay0) =", partial.get_layer_size(0))
-            print("partial conv len(lay1) =", partial.get_layer_size(1))
-            print("partial conv edges", len(partial.edges))
+            # print("partial conv", partial.nodes)
+            # print("partial conv len(lay0) =", partial.get_layer_size(0))
+            # print("partial conv len(lay1) =", partial.get_layer_size(1))
+            # print("partial conv edges", len(partial.edges))
             graph.append(partial)
         else:
             print("Warning: ignoring sub-module of type", type(module))
-        print("Transformed module", type(module))
-        print("graph nodes (len=%s)" % len(graph.nodes), graph.nodes)
-        if partial is not None:
-            print("partial nodes (len=%s)" % len(partial.nodes), partial.nodes)
+        # print("Transformed module", type(module))
+        # print("graph nodes (len=%s)" % len(graph.nodes), graph.nodes)
+        # if partial is not None:
+        #    print("partial nodes (len=%s)" % len(partial.nodes), partial.nodes)
 
         return graph
 

@@ -1,4 +1,4 @@
-# deepstruct - tools for neural network graph topology analysis [![PyPI version](https://badge.fury.io/py/deepstruct.svg)](https://badge.fury.io/py/deepstruct) ![Tests](https://github.com/innvariant/deepstruct/workflows/Tests/badge.svg) [![Documentation Status](https://readthedocs.org/projects/deepstruct/badge/?version=latest)](https://deepstruct.readthedocs.io/en/latest/?badge=latest) [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
+# deepstruct - tools for neural network graph topology analysis [![PyPI version](https://badge.fury.io/py/deepstruct.svg)](https://badge.fury.io/py/deepstruct) ![Tests](https://github.com/innvariant/deepstruct/workflows/Tests/badge.svg) [![Documentation Status](https://readthedocs.org/projects/deepstruct/badge/?version=latest)](https://deepstruct.readthedocs.io/en/latest/?badge=latest) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 Tools for fusing machine learning and graph theory.
 We are fascinated with the interplay of end-to-end learnable, locally restricted models and their graph theoretical properties.
 Searching for evidence of the structural prior hypothesis.
@@ -32,7 +32,37 @@ From public GitHub:
 pip install --upgrade git+ssh://git@github.com:innvariant/deepstruct.git
 ```
 
-## Models
+## Quick usage: multi-layered feed-forward neural network on MNIST
+The simplest implementation is one which provides multiple layers with binary masks for each weight matrix.
+It doesn't consider any skip-layer connections.
+Each layer is then connected to only the following one.
+```python
+import deepstruct.sparse
+
+mnist_model = deepstruct.sparse.MaskedDeepFFN((1, 28, 28), 10, [100]*10, use_layer_norm=True)
+```
+This is a ready-to-use pytorch module which has ten layers of each one hundred neurons and applies layer normalization before each activation.
+Training it on any dataset will work out of the box like every other pytorch module.
+You can set masks on it via
+```python
+import deepstruct.sparse
+for layer in deepstruct.sparse.maskable_layers(mnist_model):
+    layer.mask[:, :] = True
+```
+and if you disable some of these mask elements you have defined your first sparse model.
+
+
+
+## Sparse Neural Network implementations
+![Sparse Network Connectivity on zeroth order with a masked deep feed-forward neural network](docs/masked-deep-ffn.png)
+![Sparse Network Connectivity on zeroth order with a masked deep neural network with skip-layer connections](docs/masked-deep-dan.png)
+![Sparse Network Connectivity on second order with a masked deep cell-based neural network](docs/masked-deep-cell-dan.png)
+
+**What's contained in deepstruct?**
+- ready-to-use models in pytorch for learning instances on common (supervised/unsupervised) datasets from which a structural analysis is possible
+- model-to-graph transformations for studying models from a graph-theoretic perspective
+
+**Models:**
 - *deepstruct.sparse.MaskableModule*: pytorch modules that contain explicit masks to enforce (mostly zero-ordered) structure
 - *deepstruct.sparse.MaskedLinearLayer*: pytorch module with a simple linear layer extended with masking capability.
 Suitable if you want to have linear-layers on which to enforce masks which could be obtained through pruning, regularization or other other search techniques.
@@ -55,21 +85,10 @@ We define structure over graph theoretic properties given a computational graph 
 This includes all major neural network definitions and lets us study them from the perspective of their *representation* and their *structure*.
 In a probabilistic sense, one can interprete structure as a prior to the model and despite single-layered wide networks are universal function approximators we follow the hypothesis that given certain structural priors we can find models with better properties.
 
-
-
-## Sparse Neural Network implementations
-![Sparse Network Connectivity on zeroth order with a masked deep feed-forward neural network](docs/masked-deep-ffn.png)
-![Sparse Network Connectivity on zeroth order with a masked deep neural network with skip-layer connections](docs/masked-deep-dan.png)
-![Sparse Network Connectivity on second order with a masked deep cell-based neural network](docs/masked-deep-cell-dan.png)
-
-**What's contained in deepstruct?**
-- ready-to-use models in pytorch for learning instances on common (supervised/unsupervised) datasets from which a structural analysis is possible
-- model-to-graph transformations for studying models from a graph-theoretic perspective
-
 Before considering implementations, one should have a look on possible representations of Sparse Neural Networks.
 In case of feed-forward neural networks (FFNs) the network can be represented as a list of weight matrices.
 Each weight matrix represents the connections from one layer to the next.
-Having a network without some connections then simply means setting entries in those matrices to zero.
+Having a network without some connections then means setting entries in those matrices to zero.
 Removing a particular neuron means setting all entries representing its incoming connections to zero.
 
 However, sparsity can be employed on various levels of a general artificial neural network.
@@ -79,22 +98,18 @@ Sparsity can be employed on connection-, weight-, block-, channel-, cell-level a
 Implementations respecting the areas for sparsification can have drastical differences.
 Thus there are various ways for implementing Sparse Neural Networks.
 
-### Feed-forward Neural Network with sparsity
-The simplest implementation is probably one which provides multiple layers with binary masks for each weight matrix.
-It doesn't consider any skip-layer connections.
-Each layer is then connected to only the following one.
+
+## Examples
+Specify structures by prior design, e.g. random social networks transformed into directed acyclic graphs:
 ```python
+import networkx as nx
 import deepstruct.sparse
 
-mnist_model = deepstruct.sparse.MaskedDeepFFN((1, 28, 28), 10, [100, 100])
-```
-
-
-```python
-import deepstruct.sparse
-
-structure  = deepstruct.sparse.CachedLayeredGraph()
-# .. add nodes & edges to the networkx graph structure
+# Use networkx to generate a random graph based on the Watts-Strogatz model
+random_graph = nx.newman_watts_strogatz_graph(100, 4, 0.5)
+structure = deepstruct.graph.CachedLayeredGraph()
+structure.add_edges_from(random_graph.edges)
+structure.add_nodes_from(random_graph.nodes)
 
 # Build a neural network classifier with 784 input and 10 output neurons and the given structure
 model = deepstruct.sparse.MaskedDeepDAN(784, 10, structure)
@@ -104,6 +119,8 @@ pruned_structure = model.generate_structure()  # Get the structure -- a networkx
 
 new_model = deepstruct.sparse.MaskedDeepDAN(784, 10, pruned_structure)
 ```
+
+Define a feed-forward neural network (with no skip-layer connections) and obtain its structure as a graph:
 ```python
 import deepstruct.sparse
 

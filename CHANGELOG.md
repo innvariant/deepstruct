@@ -1,5 +1,11 @@
 # Changelog for deepstruct
 
+## 0.8
+* deprecation of learning utilities
+* integrated additional normalization layers
+* masks on maskable layers are parameterizable to investigate on structural regularization ideas
+* functional dataset can now be easily stored in a pickle file
+
 ## 0.7
 * new minimal version requirement is python 3.7
 * introduced interface for "functors" which transform a nn.Module into a directed acyclic graph

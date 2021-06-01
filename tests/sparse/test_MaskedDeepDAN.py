@@ -1,5 +1,6 @@
 import networkx as nx
 import numpy as np
+import torch
 
 import deepstruct.graph
 import deepstruct.sparse
@@ -251,3 +252,37 @@ def test_dev():
             structure.add_edge(v, t)
 
     deepstruct.sparse.MaskedDeepDAN(784, 10, structure)
+
+
+def test_rand_structure_with_layer_norm_success():
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    # Arrange
+    random_graph = nx.newman_watts_strogatz_graph(100, 4, 0.5)
+    # print("Random graph has %s edges." % len(random_graph.edges))
+    structure = deepstruct.graph.CachedLayeredGraph()
+    structure.add_edges_from(random_graph.edges)
+    structure.add_nodes_from(random_graph.nodes)
+    batch_size = 10
+    shape_input = (28, 28)
+    size_output = 10
+    random_input = torch.tensor(
+        np.random.random((batch_size,) + shape_input),
+        device=device,
+        requires_grad=False,
+    )
+    model = deepstruct.sparse.MaskedDeepDAN(
+        shape_input, size_output, structure, use_layer_norm=True
+    )
+    model.to(device)
+
+    # Act
+    model(random_input)
+
+    # Act
+    extracted_structure = model.generate_structure(
+        include_input=False, include_output=False
+    )
+    assert len(structure.nodes) == len(extracted_structure.nodes)
+    assert len(structure.edges) == len(extracted_structure.edges)
+    assert nx.is_isomorphic(structure, extracted_structure)

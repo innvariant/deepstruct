@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from deprecated import deprecated
 from torch.autograd import Variable
 
 from deepstruct.graph import CachedLayeredGraph
@@ -162,18 +163,25 @@ class MaskedDeepDAN(MaskableModule):
     A deep directed acyclic network model which is capable of masked layers and masked skip-layer connections.
     """
 
-    def __init__(self, input_size, num_classes, structure: LayeredGraph):
+    def __init__(
+        self,
+        size_input,
+        size_output: int,
+        structure: LayeredGraph,
+        use_layer_norm: bool = False,
+    ):
         super(MaskedDeepDAN, self).__init__()
 
         self._structure = structure
+        self._use_layer_norm = True if use_layer_norm else False
         assert structure.num_layers > 0
 
         # Multiple dimensions for input size are flattened out
-        if type(input_size) is tuple or type(input_size) is torch.Size:
-            input_size = np.prod(input_size)
-        input_size = int(input_size)
+        if type(size_input) is tuple or type(size_input) is torch.Size:
+            size_input = np.prod(size_input)
+        size_input = int(size_input)
 
-        self.layer_first = MaskedLinearLayer(input_size, structure.first_layer_size)
+        self.layer_first = MaskedLinearLayer(size_input, structure.first_layer_size)
         self.layers_main_hidden = nn.ModuleList(
             [
                 MaskedLinearLayer(
@@ -183,6 +191,10 @@ class MaskedDeepDAN(MaskableModule):
                 for cur_lay in structure.layers[1:]
             ]
         )
+
+        self._layers_normalization = []
+        if self._use_layer_norm:
+            self._layers_normalization.append(nn.LayerNorm(structure.get_layer_size(0)))
 
         for layer_idx, layer in zip(structure.layers[1:], self.layers_main_hidden):
             mask = torch.zeros(
@@ -197,7 +209,14 @@ class MaskedDeepDAN(MaskableModule):
                 ):
                     if structure.has_edge(source_vertex, target_vertex):
                         mask[target_idx][source_idx] = 1
-            layer.set_mask(mask)
+            layer.mask = mask
+
+            if self._use_layer_norm:
+                self._layers_normalization.append(
+                    nn.LayerNorm(structure.get_layer_size(layer_idx))
+                )
+
+        self.layer_normalizations = nn.ModuleList(self._layers_normalization)
 
         skip_layers = []
         self._skip_targets = {}
@@ -223,7 +242,7 @@ class MaskedDeepDAN(MaskableModule):
                         ):
                             if structure.has_edge(source_vertex, target_vertex):
                                 mask[target_idx][source_idx] = 1
-                    skip_layer.set_mask(mask)
+                    skip_layer.mask = mask
 
                     skip_layers.append(skip_layer)
                     self._skip_targets[target_layer].append(
@@ -231,9 +250,41 @@ class MaskedDeepDAN(MaskableModule):
                     )
         self.layers_skip_hidden = nn.ModuleList(skip_layers)
 
-        self.layer_out = MaskedLinearLayer(structure.last_layer_size, num_classes)
+        self.layer_out = MaskedLinearLayer(structure.last_layer_size, size_output)
         self.activation = nn.ReLU()
 
+    def forward(self, input):
+        # input : [batch_size, ?, ?, ..], e.g. [100, 1, 28, 28] or [100, 3, 32, 32]
+        x = input.flatten(start_dim=1)
+        # x: [batch_size, ?*?*..], e.g. [100, 784] or [100, 3072]
+        last_output = self.activation(self.layer_first(x))
+        layer_results = {0: last_output}
+        for layer, layer_idx in zip(
+            self.layers_main_hidden, self._structure.layers[1:]
+        ):
+            # Apply directly layer transformation
+            out_layer = layer(last_output)
+            if self._use_layer_norm:
+                out_layer = self._layers_normalization[layer_idx](out_layer)
+            out = self.activation(out_layer)
+
+            # Sum up all additional layer transformations from skip-connections
+            if layer_idx in self._skip_targets:
+                for skip_target in self._skip_targets[layer_idx]:
+                    source_layer = skip_target["layer"]
+                    source_idx = skip_target["source"]
+
+                    out += self.activation(source_layer(layer_results[source_idx]))
+
+            layer_results[layer_idx] = out  # copy?
+            last_output = out
+
+        return self.layer_out(last_output)
+
+    @deprecated(
+        reason="Generating a modules graph structure will be handled from outside through a functor object.",
+        version="0.8.0",
+    )
     def generate_structure(self, include_input=False, include_output=False):
         structure = CachedLayeredGraph()
 
@@ -355,29 +406,6 @@ class MaskedDeepDAN(MaskableModule):
 
         return structure
 
-    def forward(self, input):
-        # input : [batch_size, ?, ?, ..], e.g. [100, 1, 28, 28] or [100, 3, 32, 32]
-        x = input.flatten(start_dim=1)
-        # x: [batch_size, ?*?*..], e.g. [100, 784] or [100, 3072]
-        last_output = self.activation(self.layer_first(x))
-        layer_results = {0: last_output}
-        for layer, layer_idx in zip(
-            self.layers_main_hidden, self._structure.layers[1:]
-        ):
-            out = self.activation(layer(last_output))
-
-            if layer_idx in self._skip_targets:
-                for skip_target in self._skip_targets[layer_idx]:
-                    source_layer = skip_target["layer"]
-                    source_idx = skip_target["source"]
-
-                    out += self.activation(source_layer(layer_results[source_idx]))
-
-            layer_results[layer_idx] = out  # copy?
-            last_output = out
-
-        return self.layer_out(last_output)
-
 
 class MaskedDeepFFN(MaskableModule):
     """
@@ -386,36 +414,42 @@ class MaskedDeepFFN(MaskableModule):
     This representation is suitable for feed-forward sparse networks, probably with density 0.5 and above per layer.
     """
 
-    def __init__(self, input_size, num_classes, hidden_layers: list):
+    def __init__(
+        self, size_input, size_output, hidden_layers: list, use_layer_norm: bool = False
+    ):
         super(MaskedDeepFFN, self).__init__()
         assert len(hidden_layers) > 0
+        self._activation = nn.ReLU()
 
         # Multiple dimensions for input size are flattened out
-        if type(input_size) is tuple or type(input_size) is torch.Size:
-            input_size = np.prod(input_size)
-        input_size = int(input_size)
+        if type(size_input) is tuple or type(size_input) is torch.Size:
+            size_input = np.prod(size_input)
+        size_input = int(size_input)
 
-        self.layer_first = MaskedLinearLayer(input_size, hidden_layers[0])
-        self.layers_hidden = nn.ModuleList(
-            [
-                MaskedLinearLayer(hidden_layers[lay], hid)
-                for lay, hid in enumerate(hidden_layers[1:])
-            ]
-        )
-        self.layer_out = MaskedLinearLayer(hidden_layers[-1], num_classes)
-        self.activation = nn.ReLU()
+        self._layer_first = MaskedLinearLayer(size_input, hidden_layers[0])
+        self._layers_hidden = torch.nn.ModuleList()
+        for cur_lay, size_h in enumerate(hidden_layers[1:]):
+            self._layers_hidden.append(
+                MaskedLinearLayer(hidden_layers[cur_lay], size_h)
+            )
 
+            if use_layer_norm:
+                self._layers_hidden.append(torch.nn.LayerNorm(size_h))
+
+            self._layers_hidden.append(self._activation)
+
+        self._layer_out = MaskedLinearLayer(hidden_layers[-1], size_output)
+
+    @deprecated(
+        reason="Generating a modules graph structure will be handled from outside through a functor object.",
+        version="0.8.0",
+    )
     def generate_structure(self, include_input=False, include_output=False):
-        """
-
-        :param include_input:
-        :param include_output:
-        :rtype : LayeredGraph
-        :return:
-        """
         structure = CachedLayeredGraph()
 
         def add_edges(structure, layer, offset_source):
+            if not isinstance(layer, MaskedLinearLayer):
+                return offset_source
             offset_target = offset_source + layer.mask.shape[1]
             for source_node_idx, source_node in enumerate(range(layer.mask.shape[1])):
                 for target_node_idx, target_node in enumerate(
@@ -429,32 +463,24 @@ class MaskedDeepFFN(MaskableModule):
 
         offset_source = 0
         if include_input:
-            offset_source = add_edges(structure, self.layer_first, 0)
+            offset_source = add_edges(structure, self._layer_first, 0)
 
-        for layer in self.layers_hidden:
+        for layer in self._layers_hidden:
             offset_source = add_edges(structure, layer, offset_source)
 
         if include_output:
-            add_edges(structure, self.layer_out, offset_source)
+            add_edges(structure, self._layer_out, offset_source)
 
         return structure
 
     def forward(self, input):
         # input : [batch_size, ?, ?, ..], e.g. [100, 1, 28, 28] or [100, 3, 32, 32]
-        out = self.activation(
-            self.layer_first(input.flatten(start_dim=1))
+        out = self._activation(
+            self._layer_first(input.flatten(start_dim=1))
         )  # [B, n_hidden_1]
-        for layer in self.layers_hidden:
-            out = self.activation(layer(out))
-        return self.layer_out(out)  # [B, n_out]
-
-    def to(self, *args, **kwargs):
-        super().to(*args, **kwargs)
-        self.layer_first.to(*args, **kwargs)
-        for idx, h in enumerate(self.layers_hidden):
-            self.layers_hidden[idx] = self.layers_hidden[idx].to(*args, **kwargs)
-        self.layer_out.to(*args, **kwargs)
-        return self
+        for layer in self._layers_hidden:
+            out = layer(out)
+        return self._layer_out(out)  # [B, n_out]
 
 
 def maskable_layers(network):
@@ -484,23 +510,88 @@ def prunable_layers_with_name(network):
 
 
 class MaskedLinearLayer(nn.Linear, MaskableModule):
-    def __init__(self, in_feature, out_features, bias=True, keep_layer_input=False):
+    def __init__(
+        self,
+        in_feature,
+        out_features,
+        bias=True,
+        keep_layer_input=False,
+        mask_as_params: bool = False,
+    ):
         """
         :param in_feature:          The number of features that are inserted in the layer.
         :param out_features:        The number of features that are returned by the layer.
         :param bias:                Iff each neuron in the layer should have a bias unit as well.
         """
+
+        self._masks_as_params = True if mask_as_params else False
         super().__init__(in_feature, out_features, bias)
 
-        self.register_buffer(
-            "mask", torch.ones((out_features, in_feature), dtype=torch.bool)
-        )
+        if mask_as_params:
+            # Mask as a parameter could still be updated through optimization, e.g. by momentum
+            # For the purpose of not considering them in optimization, you can set requires_grad=False on them
+            # self._mask = nn.Parameter(torch.ones((out_features, in_feature, 2), dtype=torch.float32), requires_grad=False)
+            # self._mask = nn.Parameter(torch.Tensor(out_features, in_feature, 2))
+            self._mask = nn.Parameter(
+                torch.ones((out_features, in_feature, 2), dtype=torch.float32)
+            )
+        elif not mask_as_params:
+            # Masks as buffers are considered in persistence, putting the computation to GPU or changing its types
+            # but are not contained in the set of parameters for optimization
+            self.register_buffer(
+                "_mask", torch.ones((out_features, in_feature), dtype=torch.bool)
+            )
         self.keep_layer_input = keep_layer_input
         self.layer_input = None
 
+    def reset_parameters(self, keep_mask=False):
+        super().reset_parameters()
+        if hasattr(self, "_mask") and self._masks_as_params and not keep_mask:
+            # self.mask = torch.round(torch.rand_like(self._mask))
+            self.mask = torch.ones_like(self.weight)
+        elif hasattr(self, "_mask") and not keep_mask:
+            # hasattr() is necessary because reset_parameters() is called in __init__ of Linear(), but buffer 'mask'
+            # may only be registered after super() call, thus 'mask' might not be defined as buffer / attribute, yet
+            self.mask = torch.ones(self.weight.size(), dtype=torch.bool)
+
+    @property
+    def mask(self):
+        return (
+            self._mask
+            if not self._masks_as_params
+            else torch.argmax(torch.softmax(self._mask, dim=2), dim=2)
+        )
+
+    @mask.setter
+    def mask(self, mask):
+        """
+        :param mask: Binary mask of shape (out_feature, in_feature)
+        :return:
+        """
+        if self._masks_as_params:
+            # print("before setting", self._mask)
+            mask_inverted = 1 - mask
+            alphas = torch.zeros_like(self._mask)
+            alphas[:, :, 0] = mask_inverted * 0.9 + mask * 0.1
+            alphas[:, :, 1] = mask * 0.9 + mask_inverted * 0.1
+            # self._mask[:, :, 0] = mask_inverted * 0.9 + mask * 0.1
+            # self._mask[:, :, 1] = mask * 0.9 + mask_inverted * 0.1
+            self._mask = nn.Parameter(alphas)
+            # print("after setting", self._mask)
+        else:
+            self._mask = mask
+
+    @deprecated(
+        reason="Accessing mask should be done via the property accessor .mask",
+        version="0.8.0",
+    )
     def get_mask(self):
         return self.mask
 
+    @deprecated(
+        reason="Accessing mask should be done via the property accessor .mask",
+        version="0.8.0",
+    )
     def set_mask(self, mask):
         self.mask = Variable(mask)
 
@@ -524,15 +615,12 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         )
         self.mask[torch.where(abs(self.weight) < theta)] = False
 
+    @deprecated(
+        reason="Unnecessary additional accessor for the modules weight. Use the property accessor '.weight' of nn.Linear",
+        version="0.8.0",
+    )
     def get_weight(self):
         return self.weight
-
-    def reset_parameters(self, keep_mask=False):
-        super().reset_parameters()
-        # hasattr() is necessary because reset_parameters() is called in __init__ of Linear(), but buffer 'mask'
-        # may only be registered after super() call, thus 'mask' might not be defined as buffer / attribute, yet
-        if hasattr(self, "mask") and not keep_mask:
-            self.mask = torch.ones(self.weight.size(), dtype=torch.bool)
 
     def forward(self, input):
         x = (

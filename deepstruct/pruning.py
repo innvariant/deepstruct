@@ -508,7 +508,7 @@ def set_random_saliency(network):
 
 def set_random_masks(module: nn.Module):
     if isinstance(module, deepstruct.sparse.MaskedLinearLayer):
-        module.set_mask(torch.round(torch.rand_like(module.get_weight())))
+        module.mask = torch.round(torch.rand_like(module.weight))
 
 
 def set_distributed_saliency(network):

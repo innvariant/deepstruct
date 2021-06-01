@@ -40,7 +40,7 @@ apt-get install gitlab-runner
 $ gitlab-runner -v
 Version:      12.3.0
 ```
-Execute job *tests*: ``gitlab-runner exec docker test-python3.6``
+Execute job *tests*: ``gitlab-runner exec docker test-python3.7``
 
 ## Running github action locally
 Install *https://github.com/nektos/act*.
