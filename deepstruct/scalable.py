@@ -156,12 +156,16 @@ class ScalableDAN(object):
 
         return graph_scaled
 
-    def build(self, input_shape, output_shape, scale: int) -> nn.Module:
+    def build(
+        self, input_shape, output_shape, scale: int, use_layer_norm: bool = True
+    ) -> nn.Module:
         assert scale > 0
         graph_scaled = self.grow(scale)
         self._cached_scaled_structure = None
         self._vertex_correspondences = None
-        return MaskedDeepDAN(input_shape, output_shape, graph_scaled)
+        return MaskedDeepDAN(
+            input_shape, output_shape, graph_scaled, use_layer_norm=use_layer_norm
+        )
 
 
 if __name__ == "__main__":
