@@ -1,3 +1,4 @@
+import networkx as nx
 import torch
 
 import deepstruct.sparse
@@ -103,3 +104,26 @@ def test_deep_ffn2():
         + sum(l1 * l2 for l1, l2 in zip(layers[0:-1], layers[1:]))
         + layers[-1] * output_size
     )
+
+
+def test_deep_dan():
+    # Arrange
+    shape_input = (50,)
+    output_size = 10
+    random_graph = nx.newman_watts_strogatz_graph(100, 4, 0.5)
+    print(len(random_graph.nodes))
+    print(len(random_graph.edges))
+    structure = deepstruct.graph.CachedLayeredGraph()
+    structure.add_edges_from(random_graph.edges)
+    structure.add_nodes_from(random_graph.nodes)
+    model = deepstruct.sparse.MaskedDeepDAN(shape_input, output_size, structure)
+    for layer in deepstruct.sparse.maskable_layers(model):
+        layer.weight[:, :] += 1  # make sure everything is fully connected
+
+    functor = GraphTransform(torch.randn((1,) + shape_input))
+
+    # Act
+    result = functor.transform(model)
+
+    print(len(result.nodes))
+    print(len(result.edges))

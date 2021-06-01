@@ -32,7 +32,37 @@ From public GitHub:
 pip install --upgrade git+ssh://git@github.com:innvariant/deepstruct.git
 ```
 
-## Models
+## Quick usage: multi-layered feed-forward neural network on MNIST
+The simplest implementation is one which provides multiple layers with binary masks for each weight matrix.
+It doesn't consider any skip-layer connections.
+Each layer is then connected to only the following one.
+```python
+import deepstruct.sparse
+
+mnist_model = deepstruct.sparse.MaskedDeepFFN((1, 28, 28), 10, [100]*10, use_layer_norm=True)
+```
+This is a ready-to-use pytorch module which has ten layers of each one hundred neurons and applies layer normalization before each activation.
+Training it on any dataset will work out of the box simply as every other pytorch module.
+You can set masks on it via
+```python
+import deepstruct.sparse
+for layer in deepstruct.sparse.maskable_layers(mnist_model):
+    layer.mask[:, :] = True
+```
+and if you disable some of these mask elements you have defined your first sparse model.
+
+
+
+## Sparse Neural Network implementations
+![Sparse Network Connectivity on zeroth order with a masked deep feed-forward neural network](docs/masked-deep-ffn.png)
+![Sparse Network Connectivity on zeroth order with a masked deep neural network with skip-layer connections](docs/masked-deep-dan.png)
+![Sparse Network Connectivity on second order with a masked deep cell-based neural network](docs/masked-deep-cell-dan.png)
+
+**What's contained in deepstruct?**
+- ready-to-use models in pytorch for learning instances on common (supervised/unsupervised) datasets from which a structural analysis is possible
+- model-to-graph transformations for studying models from a graph-theoretic perspective
+
+**Models:**
 - *deepstruct.sparse.MaskableModule*: pytorch modules that contain explicit masks to enforce (mostly zero-ordered) structure
 - *deepstruct.sparse.MaskedLinearLayer*: pytorch module with a simple linear layer extended with masking capability.
 Suitable if you want to have linear-layers on which to enforce masks which could be obtained through pruning, regularization or other other search techniques.
@@ -55,17 +85,6 @@ We define structure over graph theoretic properties given a computational graph 
 This includes all major neural network definitions and lets us study them from the perspective of their *representation* and their *structure*.
 In a probabilistic sense, one can interprete structure as a prior to the model and despite single-layered wide networks are universal function approximators we follow the hypothesis that given certain structural priors we can find models with better properties.
 
-
-
-## Sparse Neural Network implementations
-![Sparse Network Connectivity on zeroth order with a masked deep feed-forward neural network](docs/masked-deep-ffn.png)
-![Sparse Network Connectivity on zeroth order with a masked deep neural network with skip-layer connections](docs/masked-deep-dan.png)
-![Sparse Network Connectivity on second order with a masked deep cell-based neural network](docs/masked-deep-cell-dan.png)
-
-**What's contained in deepstruct?**
-- ready-to-use models in pytorch for learning instances on common (supervised/unsupervised) datasets from which a structural analysis is possible
-- model-to-graph transformations for studying models from a graph-theoretic perspective
-
 Before considering implementations, one should have a look on possible representations of Sparse Neural Networks.
 In case of feed-forward neural networks (FFNs) the network can be represented as a list of weight matrices.
 Each weight matrix represents the connections from one layer to the next.
@@ -79,17 +98,8 @@ Sparsity can be employed on connection-, weight-, block-, channel-, cell-level a
 Implementations respecting the areas for sparsification can have drastical differences.
 Thus there are various ways for implementing Sparse Neural Networks.
 
-### Feed-forward Neural Network with sparsity
-The simplest implementation is probably one which provides multiple layers with binary masks for each weight matrix.
-It doesn't consider any skip-layer connections.
-Each layer is then connected to only the following one.
-```python
-import deepstruct.sparse
 
-mnist_model = deepstruct.sparse.MaskedDeepFFN((1, 28, 28), 10, [100, 100])
-```
-
-
+## Examples
 ```python
 import deepstruct.sparse
 

@@ -1,5 +1,9 @@
 # Changelog for deepstruct
 
+## 0.8
+* deprecation of learning utilities
+* integrated additional normalization layers
+
 ## 0.7
 * new minimal version requirement is python 3.7
 * introduced interface for "functors" which transform a nn.Module into a directed acyclic graph
