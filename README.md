@@ -42,7 +42,7 @@ import deepstruct.sparse
 mnist_model = deepstruct.sparse.MaskedDeepFFN((1, 28, 28), 10, [100]*10, use_layer_norm=True)
 ```
 This is a ready-to-use pytorch module which has ten layers of each one hundred neurons and applies layer normalization before each activation.
-Training it on any dataset will work out of the box simply as every other pytorch module.
+Training it on any dataset will work out of the box like every other pytorch module.
 You can set masks on it via
 ```python
 import deepstruct.sparse
@@ -88,7 +88,7 @@ In a probabilistic sense, one can interprete structure as a prior to the model a
 Before considering implementations, one should have a look on possible representations of Sparse Neural Networks.
 In case of feed-forward neural networks (FFNs) the network can be represented as a list of weight matrices.
 Each weight matrix represents the connections from one layer to the next.
-Having a network without some connections then simply means setting entries in those matrices to zero.
+Having a network without some connections then means setting entries in those matrices to zero.
 Removing a particular neuron means setting all entries representing its incoming connections to zero.
 
 However, sparsity can be employed on various levels of a general artificial neural network.
@@ -100,11 +100,16 @@ Thus there are various ways for implementing Sparse Neural Networks.
 
 
 ## Examples
+Specify structures by prior design, e.g. random social networks transformed into directed acyclic graphs:
 ```python
+import networkx as nx
 import deepstruct.sparse
 
-structure  = deepstruct.sparse.CachedLayeredGraph()
-# .. add nodes & edges to the networkx graph structure
+# Use networkx to generate a random graph based on the Watts-Strogatz model
+random_graph = nx.newman_watts_strogatz_graph(100, 4, 0.5)
+structure = deepstruct.graph.CachedLayeredGraph()
+structure.add_edges_from(random_graph.edges)
+structure.add_nodes_from(random_graph.nodes)
 
 # Build a neural network classifier with 784 input and 10 output neurons and the given structure
 model = deepstruct.sparse.MaskedDeepDAN(784, 10, structure)
@@ -114,6 +119,8 @@ pruned_structure = model.generate_structure()  # Get the structure -- a networkx
 
 new_model = deepstruct.sparse.MaskedDeepDAN(784, 10, pruned_structure)
 ```
+
+Define a feed-forward neural network (with no skip-layer connections) and obtain its structure as a graph:
 ```python
 import deepstruct.sparse
 
