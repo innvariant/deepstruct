@@ -158,7 +158,7 @@ class MaskableModule(nn.Module):
             layer.recompute_mask(theta)
 
 
-class MaskedDeepDAN(MaskableModule):
+class MaskedDeepDAN(MaskableModule):  # nn.Module
     """
     A deep directed acyclic network model which is capable of masked layers and masked skip-layer connections.
     """

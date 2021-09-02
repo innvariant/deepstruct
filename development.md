@@ -1,19 +1,26 @@
 # Roadmap
 
 **New Features**
-- [ ] sparse recurrent network models
+- [ ] define on graph transformation a level of granularity for structure extraction
+- [ ] estimate a graph size during the inference-duckpunching-phase of the transformation
 - [ ] mapping between network models and graphs (partially there)
 - [ ] scalable graph themes for transformation into function space
 
 **General**
+- [ ] re-work pruning to enable different strategies with an outside-model object-oriented software design
+- [ ] document how to extract a single mask
+- [ ] document how to initialize a deep directed acyclic network
+- [ ] document how to train models with data, e.g. even with pytorch ignite
+- [ ] document the graph transformation via duckpunching
 - [ ] describe idea of graph themes
 - [ ] describe architecture of deepstruct with flowcharts / visualizations
 - [ ] describe idea of mapping between network model and graphs (we use networkx)
+
+- [x] sparse recurrent network models
 - [x] organize and explain when to use which sparse model in application
 
 
-# Architecture
-Flat & simple :)
+
 
 # Practices & Conventions
 

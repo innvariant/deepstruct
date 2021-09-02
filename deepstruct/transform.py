@@ -244,6 +244,36 @@ class GraphTransform(ForgetfulFunctor):
 
     def __init__(self, random_input: torch.Tensor):
         self.random_input = random_input
+        self._pointwise_ops = [
+            torch.nn.Threshold,
+            torch.nn.ReLU,
+            torch.nn.RReLU,
+            torch.nn.Hardtanh,
+            torch.nn.ReLU6,
+            torch.nn.Sigmoid,
+            torch.nn.Tanh,
+            torch.nn.ELU,
+            torch.nn.CELU,
+            torch.nn.SELU,
+            torch.nn.GLU,
+            torch.nn.GELU,
+            torch.nn.Hardshrink,
+            torch.nn.LeakyReLU,
+            torch.nn.LogSigmoid,
+            torch.nn.Softplus,
+            torch.nn.Softshrink,
+            torch.nn.MultiheadAttention,
+            torch.nn.PReLU,
+            torch.nn.Softsign,
+            torch.nn.Tanhshrink,
+            torch.nn.Softmin,
+            torch.nn.Softmax,
+            torch.nn.Softmax2d,
+            torch.nn.LogSoftmax,
+            torch.nn.BatchNorm1d,
+            torch.nn.BatchNorm2d,
+            torch.nn.BatchNorm3d,
+        ]
 
     @property
     def random_input(self):
@@ -264,12 +294,15 @@ class GraphTransform(ForgetfulFunctor):
         return module
 
     def _transform_partial(self, module: torch.nn.Module, graph: LabeledDAG):
+        print(module)
         assert graph is not None
         functor_conv = Conv2dLayerFunctor()
         functor_linear = LinearLayerFunctor(threshold=0.01)
 
         partial = None
-        if isinstance(module, torch.nn.ModuleList):
+        if isinstance(module, torch.nn.ModuleList) or isinstance(
+            module, torch.nn.Sequential
+        ):
             # partial = self.transform(module)
             # graph.append(partial)
             for child in module:
@@ -289,6 +322,17 @@ class GraphTransform(ForgetfulFunctor):
             # print("partial conv len(lay1) =", partial.get_layer_size(1))
             # print("partial conv edges", len(partial.edges))
             graph.append(partial)
+        elif isinstance(module, torch.nn.Dropout):
+            # Dropout behaves structurally like a linear-layer and we ignore the fact for now that some edges
+            # are ignored probabilistically
+            pass
+        if isinstance(module, torch.nn.AdaptiveAvgPool2d):
+            # TODO pooling needs to be transformed; most pooling results in structural singularities
+            pass
+        elif any(isinstance(module, op) for op in self._pointwise_ops):
+            # Point-wise operations (mostly activation functions) do not change the structure
+            # except for applying non-linear transformations on the input
+            pass
         else:
             print("Warning: ignoring sub-module of type", type(module))
         # print("Transformed module", type(module))
