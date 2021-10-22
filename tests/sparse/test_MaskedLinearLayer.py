@@ -135,3 +135,61 @@ def test_paramterized_masks_success():
     # Assert<
     assert layer._mask.size() == initial_alpha_mask.shape
     assert (layer._mask.clone().detach().cpu().numpy() != initial_alpha_mask).any()
+
+
+def test_learn():
+    # Arrange
+    input_size = 5
+    output_size = 2
+    hidden_size = 10
+    layer_one = deepstruct.sparse.MaskedLinearLayer(
+        input_size, hidden_size, mask_as_params=True
+    )
+    layer_h2h = deepstruct.sparse.MaskedLinearLayer(
+        hidden_size, hidden_size, mask_as_params=True
+    )
+    layer_out = deepstruct.sparse.MaskedLinearLayer(
+        hidden_size, output_size, mask_as_params=True
+    )
+
+    samples_per_class = 5000
+    ys = torch.cat([torch.ones(samples_per_class), torch.zeros(samples_per_class)])
+    means = (ys * 2) - 1 + torch.randn_like(ys)
+    input = torch.stack([torch.normal(means, 1) for _ in range(input_size)], dim=1)
+    shuffling = torch.randperm(2 * samples_per_class)
+    prop_train = 0.8
+    offset_train = int(prop_train * len(shuffling))
+    ids_train = shuffling[:offset_train]
+    ids_test = shuffling[offset_train:]
+    input_train = input[ids_train, :]
+    input_test = input[ids_test, :]
+    target_train = ys[ids_train].long()
+    target_test = ys[ids_test].long()
+
+    optimizer = torch.optim.Adam(
+        list(layer_one.parameters())
+        + list(layer_h2h.parameters())
+        + list(layer_out.parameters()),
+        lr=0.02,
+        weight_decay=0.1,
+    )
+    loss = torch.nn.CrossEntropyLoss()
+
+    # Act
+    for _ in range(100):
+        optimizer.zero_grad()
+        h = layer_one(input_train)
+        h = layer_h2h(torch.tanh(h))
+        prediction = layer_out(torch.tanh(h))
+        error = loss(prediction, target_train)
+        error.backward()
+        print(error)
+        optimizer.step()
+
+    h = layer_one(input_test)
+    h = layer_h2h(torch.tanh(h))
+    prediction = layer_out(torch.tanh(h))
+    print(
+        float(torch.sum(torch.argmax(prediction, axis=1) == target_test))
+        / len(target_test)
+    )
