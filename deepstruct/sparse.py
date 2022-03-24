@@ -571,7 +571,7 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         if self._masks_as_params:
             # print("before setting", self._mask)
             mask_inverted = 1 - mask
-            alphas = torch.zeros_like(self._mask)
+            alphas = torch.zeros_like(self._mask, dtype=torch.float32)
             alphas[:, :, 0] = mask_inverted * 0.9 + mask * 0.1
             alphas[:, :, 1] = mask * 0.9 + mask_inverted * 0.1
             # self._mask[:, :, 0] = mask_inverted * 0.9 + mask * 0.1
@@ -580,6 +580,25 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
             # print("after setting", self._mask)
         else:
             self._mask = mask
+
+    def __getitem__(self, key):
+        return (
+            self._mask[key]
+            if not self._masks_as_params
+            else torch.argmax(torch.softmax(self._mask[key], dim=1), dim=1)
+        )
+
+    def __setitem__(self, key, value):
+        with torch.no_grad():
+            if self._masks_as_params:
+                mask_inverted = 1 - value
+                alphas = torch.zeros_like(self._mask[key])
+                alphas[0] = mask_inverted * 0.9 + value * 0.1
+                alphas[1] = value * 0.9 + mask_inverted * 0.1
+                self._mask[key].copy_(alphas)
+            else:
+                self._mask[key].copy_(torch.tensor(value))
+            # self._mask[key] = value
 
     @deprecated(
         reason="Accessing mask should be done via the property accessor .mask",

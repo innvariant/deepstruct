@@ -151,6 +151,16 @@ def test_learn():
     layer_out = deepstruct.sparse.MaskedLinearLayer(
         hidden_size, output_size, mask_as_params=True
     )
+    layer_one.apply(deepstruct.pruning.set_random_masks)
+    # layer_h2h.mask = torch.ones((hidden_size, hidden_size))
+    for n_source in range(hidden_size):
+        for n_target in range(hidden_size):
+            layer_h2h[n_source, n_target] = (
+                0 if n_source < hidden_size / 2 or n_target < hidden_size / 2 else 1
+            )
+    print(layer_h2h.mask)
+
+    layer_out.apply(deepstruct.pruning.set_random_masks)
 
     samples_per_class = 5000
     ys = torch.cat([torch.ones(samples_per_class), torch.zeros(samples_per_class)])
@@ -176,6 +186,8 @@ def test_learn():
     loss = torch.nn.CrossEntropyLoss()
 
     # Act
+    print(layer_one.weight)
+    print(layer_h2h.weight)
     for _ in range(100):
         optimizer.zero_grad()
         h = layer_one(input_train)
@@ -183,13 +195,17 @@ def test_learn():
         prediction = layer_out(torch.tanh(h))
         error = loss(prediction, target_train)
         error.backward()
-        print(error)
         optimizer.step()
+    print(layer_one.weight)
+    print(layer_h2h.weight)
+
+    # print(torch.round(torch.where(layer_h2h.mask.bool(), layer_h2h.weight*10**3, torch.zeros_like(layer_h2h.weight))) / (10**3))
 
     h = layer_one(input_test)
     h = layer_h2h(torch.tanh(h))
     prediction = layer_out(torch.tanh(h))
-    print(
-        float(torch.sum(torch.argmax(prediction, axis=1) == target_test))
-        / len(target_test)
+
+    accuracy = float(torch.sum(torch.argmax(prediction, axis=1) == target_test)) / len(
+        target_test
     )
+    assert accuracy > 0.5
