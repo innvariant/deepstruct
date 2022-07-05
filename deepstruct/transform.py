@@ -1,4 +1,5 @@
 import itertools
+import warnings
 
 from functools import partial
 
@@ -294,7 +295,6 @@ class GraphTransform(ForgetfulFunctor):
         return module
 
     def _transform_partial(self, module: torch.nn.Module, graph: LabeledDAG):
-        print(module)
         assert graph is not None
         functor_conv = Conv2dLayerFunctor()
         functor_linear = LinearLayerFunctor(threshold=0.01)
@@ -313,20 +313,15 @@ class GraphTransform(ForgetfulFunctor):
         elif isinstance(module, torch.nn.Conv2d):
             width = module._deepstruct_input_shape[-1]
             height = module._deepstruct_input_shape[-2]
-            # print("captured width/height", (width, height))
             functor_conv.width = width
             functor_conv.height = height
             partial = functor_conv.transform(module)
-            # print("partial conv", partial.nodes)
-            # print("partial conv len(lay0) =", partial.get_layer_size(0))
-            # print("partial conv len(lay1) =", partial.get_layer_size(1))
-            # print("partial conv edges", len(partial.edges))
             graph.append(partial)
         elif isinstance(module, torch.nn.Dropout):
             # Dropout behaves structurally like a linear-layer and we ignore the fact for now that some edges
             # are ignored probabilistically
             pass
-        if isinstance(module, torch.nn.AdaptiveAvgPool2d):
+        elif isinstance(module, torch.nn.AdaptiveAvgPool2d):
             # TODO pooling needs to be transformed; most pooling results in structural singularities
             pass
         elif any(isinstance(module, op) for op in self._pointwise_ops):
@@ -334,11 +329,7 @@ class GraphTransform(ForgetfulFunctor):
             # except for applying non-linear transformations on the input
             pass
         else:
-            print("Warning: ignoring sub-module of type", type(module))
-        # print("Transformed module", type(module))
-        # print("graph nodes (len=%s)" % len(graph.nodes), graph.nodes)
-        # if partial is not None:
-        #    print("partial nodes (len=%s)" % len(partial.nodes), partial.nodes)
+            warnings.warn(f"Warning: ignoring sub-module of type {type(module)}")
 
         return graph
 

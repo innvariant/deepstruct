@@ -1,5 +1,10 @@
 # Changelog for deepstruct
 
+## 0.9
+* re-introduced saliency as an optional additional property on MaskedLinearLayers for communicating saliency measures on weight-level to decide on further pruning
+*
+
+
 ## 0.8
 * deprecation of learning utilities
 * integrated additional normalization layers

@@ -43,13 +43,6 @@ def test_stacked_graph():
     result = functor.transform(model)
     print(result.nodes)
 
-    """import networkx as nx
-    import matplotlib.pyplot as plt
-    from networkx.drawing.nx_agraph import graphviz_layout
-    pos = graphviz_layout(result, prog='dot')
-    nx.draw(result, pos, with_labels=True, arrows=True)
-    plt.show()"""
-
 
 def test_deep_ffn():
     # Arrange
@@ -73,13 +66,6 @@ def test_deep_ffn():
         + sum(l1 * l2 for l1, l2 in zip(layers[0:-1], layers[1:]))
         + layers[-1] * output_size
     )
-
-    """import networkx as nx
-    import matplotlib.pyplot as plt
-    from networkx.drawing.nx_agraph import graphviz_layout
-    pos = graphviz_layout(result, prog='dot')
-    nx.draw(result, pos, with_labels=True, arrows=True)
-    plt.show()"""
 
 
 def test_deep_ffn2():

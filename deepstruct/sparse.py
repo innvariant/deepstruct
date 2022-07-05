@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import networkx as nx
 import numpy as np
 import torch
@@ -149,13 +151,21 @@ class DeepCellDAN(nn.Module):
 
 
 class MaskableModule(nn.Module):
-    def apply_mask(self):
+    def apply_mask(self) -> MaskableModule:
         for layer in maskable_layers(self):
             layer.apply_mask()
+        return self
 
-    def recompute_mask(self, theta=0.0001):
+    def recompute_mask(self, theta=0.0001) -> MaskableModule:
         for layer in maskable_layers(self):
             layer.recompute_mask(theta)
+        return self
+
+    def reset_parameters(self, keep_mask=False):
+        super().reset_parameters()
+        for layer in maskable_layers(self):
+            layer.recompute_mask(keep_mask=keep_mask)
+        return self
 
 
 class MaskedDeepDAN(MaskableModule):  # nn.Module
@@ -416,7 +426,7 @@ class MaskedDeepFFN(MaskableModule):
 
     def __init__(
         self, size_input, size_output, hidden_layers: list, use_layer_norm: bool = False
-    ):
+    ) -> MaskedDeepFFN:
         super(MaskedDeepFFN, self).__init__()
         assert len(hidden_layers) > 0
         self._activation = nn.ReLU()
@@ -483,7 +493,7 @@ class MaskedDeepFFN(MaskableModule):
         return self._layer_out(out)  # [B, n_out]
 
 
-def maskable_layers(network):
+def maskable_layers(network) -> MaskableModule:
     for child in network.children():
         if type(child) is MaskedLinearLayer:
             yield child
@@ -492,7 +502,7 @@ def maskable_layers(network):
                 yield layer
 
 
-def maskable_layers_with_name(network):
+def maskable_layers_with_name(network) -> MaskableModule:
     for name, child in network.named_children():
         if type(child) is MaskedLinearLayer:
             yield name, child
@@ -501,11 +511,18 @@ def maskable_layers_with_name(network):
                 yield name, layer
 
 
-def prunable_layers(network):
+@deprecated(
+    reason="Redundant function name. Should simply use maskable_layers", version="0.9.0"
+)
+def prunable_layers(network) -> MaskableModule:
     return maskable_layers(network)
 
 
-def prunable_layers_with_name(network):
+@deprecated(
+    reason="Redundant function name. Should simply use maskable_layers_with_name",
+    version="0.9.0",
+)
+def prunable_layers_with_name(network) -> MaskableModule:
     return maskable_layers_with_name(network)
 
 
@@ -525,6 +542,7 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         """
 
         self._masks_as_params = True if mask_as_params else False
+        self._saliency = None
         super().__init__(in_feature, out_features, bias)
 
         if mask_as_params:
@@ -621,6 +639,22 @@ class MaskedLinearLayer(nn.Linear, MaskableModule):
         # Assigning "self.weight = torch.nn.Parameter(self.weight.mul(self.mask))" might have side effects
         # Using direct manipulation on tensor "self.weight.data"
         self.weight.data = self.weight * self.mask
+
+    @property
+    def saliency(self):
+        if self._saliency is None:
+            return self.weight.data.abs()
+        else:
+            return self._saliency
+
+    @saliency.setter
+    def saliency(self, saliency):
+        if saliency.size() != self.weight.size():
+            raise ValueError(
+                "The provided saliency measure for this layer must be of same shape as the weights."
+            )
+
+        self._saliency = saliency
 
     def recompute_mask(self, theta: float = 0.001):
         """
