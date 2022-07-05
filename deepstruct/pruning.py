@@ -2,6 +2,7 @@ import math
 import os
 
 from enum import Enum
+from typing import Union
 
 import numpy as np
 import torch
@@ -171,7 +172,7 @@ def random_pruning_absolute(self, network, number):
 #
 # Magnitude based approaches
 #
-def magnitude_class_blinded(self, network, percentage):
+def magnitude_class_blinded(network, percentage):
     """
     Implementation of weight based pruning. In each step the percentage of not yet pruned weights will be eliminated
     starting with the smallest element in the network.
@@ -186,19 +187,19 @@ def magnitude_class_blinded(self, network, percentage):
     prune_network_by_saliency(network, percentage)
 
 
-def magnitude_class_blinded_absolute(self, network, number):
+def magnitude_class_blinded_absolute(network, number):
     prune_network_by_saliency(network, number, strategy=PruningStrategy.ABSOLUTE)
 
 
-def magnitude_class_uniform(self, network, percentage):
+def magnitude_class_uniform(network, percentage):
     prune_layer_by_saliency(network, percentage)
 
 
-def magnitude_class_uniform_absolute(self, network, number):
+def magnitude_class_uniform_absolute(network, number):
     prune_layer_by_saliency(network, number, strategy=PruningStrategy.ABSOLUTE)
 
 
-def magnitude_class_distributed(self, network, percentage):
+def magnitude_class_distributed(network, percentage):
     """
     This idea comes from the paper 'Learning both Weights and Connections for Efficient Neural Networks'
     (arXiv:1506.02626v3). The main idea is that in each layer respectively to the standard derivation many elements
@@ -220,7 +221,7 @@ def magnitude_class_distributed(self, network, percentage):
     prune_network_by_saliency(network, percentage)
 
 
-def magnitude_class_distributed_absolute(self, network, number):
+def magnitude_class_distributed_absolute(network, number):
     set_distributed_saliency(network)
     prune_network_by_saliency(network, number, strategy=PruningStrategy.ABSOLUTE)
 
@@ -236,7 +237,11 @@ class PruningStrategy(Enum):
     BUCKET = 2
 
 
-def prune_network_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE):
+def prune_network_by_saliency(
+    network: nn.Module,
+    value: Union[float, torch.Tensor],
+    strategy: PruningStrategy = PruningStrategy.PERCENTAGE,
+):
     """
     Prune the number of percentage weights from the network. The elements are pruned according to the saliency that is
     set in the network. By default the saliency is the actual weight of the connections. The number of elements are
@@ -255,15 +260,15 @@ def prune_network_by_saliency(network, value, strategy=PruningStrategy.PERCENTAG
     for layer in deepstruct.sparse.maskable_layers(network):
         # All deleted weights should be set to zero so they should definetly be less than the threshold since this is
         # positive.
-        layer.mask = torch.ge(layer.get_saliency(), th).float() * layer.get_mask()
+        layer.mask = torch.ge(layer.saliency, th).float() * layer.mask
 
 
 def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE):
     pre_pruned_weight_count = get_network_weight_count(network).item()
 
     for layer in deepstruct.sparse.maskable_layers(network):
-        mask = list(layer.get_mask().abs().numpy().flatten())
-        saliency = list(layer.get_saliency().numpy().flatten())
+        mask = list(layer.mask.abs().numpy().flatten())
+        saliency = list(layer.saliency.numpy().flatten())
         _, filtered_saliency = zip(
             *(
                 (masked_val, weight_val)
@@ -280,12 +285,11 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
         elif strategy is PruningStrategy.ABSOLUTE:
             # due to floating point operations this is not 100 percent exact a few more or less weights might get
             # deleted
-            add_val = round(
-                (layer.get_weight_count() / pre_pruned_weight_count * value).item()
-            )
+            count_weight = layer.mask.sum()
+            add_val = round((count_weight / pre_pruned_weight_count * value).item())
 
-            # check if there are enough elements to prune select the highest element and add some penalty to it so the
-            if add_val > layer.get_weight_count():
+            # check if there are enough elements to prune select the highest element and add some penalty to it
+            if add_val > count_weight:
                 th = np.argmax(filtered_saliency).item() + 1
             else:
                 index = np.argsort(np.array(filtered_saliency))[add_val]
@@ -293,7 +297,7 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
         else:
             raise ValueError("Action is not supported!!!")
 
-        layer.mask = torch.ge(layer.get_saliency(), th).float() * layer.get_mask()
+        layer.mask = torch.ge(layer.saliency, th).float() * layer.mask
 
 
 def calculate_obd_saliency(self, network):
@@ -303,16 +307,14 @@ def calculate_obd_saliency(self, network):
     )
 
     # calculate the first order gradients for all weights from the pruning layers.
-    weight_params = map(
-        lambda x: x.get_weight(), deepstruct.sparse.maskable_layers(network)
-    )
+    weight_params = map(lambda x: x.weight, deepstruct.sparse.maskable_layers(network))
     loss_grads = grad(loss, weight_params, create_graph=True)
 
     # iterate over all layers and zip them with their corrosponding first gradient
     for grd, layer in zip(loss_grads, deepstruct.sparse.maskable_layers(network)):
         all_grads = []
-        mask = layer.get_mask().view(-1)
-        weight = layer.get_weight()
+        mask = layer.mask.view(-1)
+        weight = layer.weight
 
         if torch.cuda.is_available():
             weight.cuda()
@@ -333,9 +335,7 @@ def calculate_obd_saliency(self, network):
 
         # rearrange calculated value to their normal form and set saliency
         layer.saliency = (
-            torch.tensor(all_grads).view(weight.size())
-            * layer.get_weight().data.pow(2)
-            * 0.5
+            torch.tensor(all_grads).view(weight.size()) * layer.weight.data.pow(2) * 0.5
         )
 
 
@@ -390,7 +390,7 @@ def edge_cut(
     :return:
     """
     # dataset_size = layer2_input_train.shape[0]
-    w_layer = layer.get_weight().data.numpy().T
+    w_layer = layer.weight.data.numpy().T
 
     # biases = layer.bias.data.numpy()
     n_hidden_1 = w_layer.shape[0]
@@ -400,13 +400,14 @@ def edge_cut(
 
     hessian_inverse = np.load(hessian_inverse_path)
 
-    gate_w = layer.get_mask().data.numpy().T
+    gate_w = layer.mask.data.numpy().T
     # gate_b = np.ones([n_hidden_2])
 
     # calculate number of pruneable elements
     if strategy is PruningStrategy.PERCENTAGE:
         cut_ratio = value / 100  # transfer percentage from full value to floating point
-        max_pruned_num = math.floor(layer.get_weight_count() * cut_ratio)
+        count_weight = layer.mask.sum()
+        max_pruned_num = math.floor(count_weight * cut_ratio)
     elif strategy is PruningStrategy.BUCKET:
         max_pruned_num = value
     else:
@@ -460,12 +461,14 @@ def edge_cut(
     # np.save("%s/biases" % prune_save_path, b_layer)
 
 
-def find_network_threshold(network, value, strategy):
+def find_network_threshold(
+    network: nn.Module, value: Union[float, torch.Tensor], strategy: PruningStrategy
+):
     all_sal = []
     for layer in deepstruct.sparse.maskable_layers(network):
         # flatten both weights and mask
-        mask = list(layer.get_mask().abs().numpy().flatten())
-        saliency = list(layer.get_saliency().numpy().flatten())
+        mask = list(layer.mask.numpy().flatten())
+        saliency = list(layer.saliency.numpy().flatten())
 
         # zip, filter, unzip the two lists
         _, filtered_saliency = zip(
@@ -504,10 +507,10 @@ def find_network_threshold(network, value, strategy):
         return sorted_array[-1] + 1
 
 
-def set_random_saliency(network):
+def set_random_saliency(model: nn.Module):
     # set saliency to random values
-    for layer in deepstruct.sparse.maskable_layers(network):
-        layer.saliency = torch.rand_like(layer.get_weight()) * layer.get_mask()
+    for layer in deepstruct.sparse.maskable_layers(model):
+        layer.saliency = torch.rand_like(layer.weight) * layer.mask
 
 
 def set_random_masks(module: nn.Module):
@@ -519,7 +522,7 @@ def set_distributed_saliency(network):
     # prune from each layer the according number of elements
     for layer in deepstruct.sparse.maskable_layers(network):
         # calculate standard deviation for the layer
-        w = layer.get_weight().data
+        w = layer.weight.data
         st_v = 1 / w.std()
         # set the saliency in the layer = weight/st.deviation
         layer.saliency = st_v * w.abs()

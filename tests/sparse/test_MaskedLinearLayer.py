@@ -6,6 +6,16 @@ import deepstruct.sparse
 import deepstruct.util
 
 
+def test_param_determines_mask_type():
+    # Arrange
+    layer1 = deepstruct.sparse.MaskedLinearLayer(5, 3, mask_as_params=False)
+    layer2 = deepstruct.sparse.MaskedLinearLayer(5, 3, mask_as_params=True)
+
+    # Assert
+    assert layer1.mask.dtype == torch.bool
+    assert layer2.mask.dtype == torch.int64
+
+
 def test_set_mask_explicitly_success():
     input_size = 5
     output_size = 2

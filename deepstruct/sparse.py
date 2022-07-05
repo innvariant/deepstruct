@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
+
 import networkx as nx
 import numpy as np
 import torch
@@ -161,11 +163,19 @@ class MaskableModule(nn.Module):
             layer.recompute_mask(theta)
         return self
 
-    def reset_parameters(self, keep_mask=False):
+    def reset_parameters(self, keep_mask=False) -> MaskableModule:
         super().reset_parameters()
         for layer in maskable_layers(self):
             layer.recompute_mask(keep_mask=keep_mask)
         return self
+
+    @property
+    def maskable_children(self):
+        return maskable_layers(self)
+
+    @property
+    def maskable_children_with_name(self):
+        return maskable_layers_with_name(self)
 
 
 class MaskedDeepDAN(MaskableModule):  # nn.Module
@@ -493,8 +503,8 @@ class MaskedDeepFFN(MaskableModule):
         return self._layer_out(out)  # [B, n_out]
 
 
-def maskable_layers(network) -> MaskableModule:
-    for child in network.children():
+def maskable_layers(model: nn.Module) -> Iterable[MaskableModule]:
+    for child in model.children():
         if type(child) is MaskedLinearLayer:
             yield child
         elif type(child) is nn.ModuleList:
@@ -502,8 +512,8 @@ def maskable_layers(network) -> MaskableModule:
                 yield layer
 
 
-def maskable_layers_with_name(network) -> MaskableModule:
-    for name, child in network.named_children():
+def maskable_layers_with_name(model: nn.Module) -> Iterable[MaskableModule]:
+    for name, child in model.named_children():
         if type(child) is MaskedLinearLayer:
             yield name, child
         elif type(child) is nn.ModuleList:
@@ -514,7 +524,7 @@ def maskable_layers_with_name(network) -> MaskableModule:
 @deprecated(
     reason="Redundant function name. Should simply use maskable_layers", version="0.9.0"
 )
-def prunable_layers(network) -> MaskableModule:
+def prunable_layers(network) -> Iterable[MaskableModule]:
     return maskable_layers(network)
 
 
@@ -522,7 +532,7 @@ def prunable_layers(network) -> MaskableModule:
     reason="Redundant function name. Should simply use maskable_layers_with_name",
     version="0.9.0",
 )
-def prunable_layers_with_name(network) -> MaskableModule:
+def prunable_layers_with_name(network) -> Iterable[MaskableModule]:
     return maskable_layers_with_name(network)
 
 
