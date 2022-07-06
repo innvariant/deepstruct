@@ -3,7 +3,7 @@
 ## 0.9
 * re-introduced saliency as an optional additional property on MaskedLinearLayers for communicating saliency measures on weight-level to decide on further pruning
 * fixed some of the simpler pruning functions such as prune_network_by_saliency() and prune_layer_by_saliency() from deepstruct.pruning
-
+* masks up to now do not consider bias vectors which might be unexpected behaviour
 
 ## 0.8
 * deprecation of learning utilities
