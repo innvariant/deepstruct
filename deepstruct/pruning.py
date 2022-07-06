@@ -263,11 +263,13 @@ def prune_network_by_saliency(
         layer.mask = torch.ge(layer.saliency, th).float() * layer.mask
 
 
-def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE):
+def prune_layer_by_saliency(
+    network: nn.Module, value, strategy=PruningStrategy.PERCENTAGE
+):
     pre_pruned_weight_count = get_network_weight_count(network).item()
 
     for layer in deepstruct.sparse.maskable_layers(network):
-        mask = list(layer.mask.abs().numpy().flatten())
+        mask = list(layer.mask.numpy().flatten())
         saliency = list(layer.saliency.numpy().flatten())
         _, filtered_saliency = zip(
             *(
@@ -277,25 +279,28 @@ def prune_layer_by_saliency(network, value, strategy=PruningStrategy.PERCENTAGE)
             )
         )
 
+        filtered_saliency = np.array(filtered_saliency)
+
         # calculate threshold
         # percentage pruning
         if strategy is PruningStrategy.PERCENTAGE:
-            th = np.percentile(np.array(filtered_saliency), value)
+            th = np.percentile(filtered_saliency, value)
         # absolute pruning
         elif strategy is PruningStrategy.ABSOLUTE:
             # due to floating point operations this is not 100 percent exact a few more or less weights might get
             # deleted
             count_weight = layer.mask.sum()
-            add_val = round((count_weight / pre_pruned_weight_count * value).item())
+            add_val = round(
+                (np.divide(count_weight, pre_pruned_weight_count) * value).item()
+            )
 
-            # check if there are enough elements to prune select the highest element and add some penalty to it
-            if add_val > count_weight:
-                th = np.argmax(filtered_saliency).item() + 1
-            else:
-                index = np.argsort(np.array(filtered_saliency))[add_val]
-                th = np.array(filtered_saliency)[index].item()
+            th = (
+                np.argsort(filtered_saliency)[add_val]
+                if add_val <= count_weight
+                else np.argmax(filtered_saliency).item()
+            )
         else:
-            raise ValueError("Action is not supported!!!")
+            raise ValueError(f"Chosen pruning strategy {strategy} is not supported.")
 
         layer.mask = torch.ge(layer.saliency, th).float() * layer.mask
 
@@ -540,7 +545,7 @@ def keep_input_layerwise(network):
         layer.keep_layer_input = True
 
 
-def get_network_weight_count(network):
+def get_network_weight_count(network: nn.Module):
     total_weights = 0
     for layer in deepstruct.sparse.maskable_layers(network):
         total_weights += layer.get_weight_count()
