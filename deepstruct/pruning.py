@@ -481,17 +481,19 @@ def find_network_threshold(
         # add all saliencies to list
         all_sal += filtered_saliency
 
-    # calculate percentile
+    all_sal = np.array(all_sal)
     if strategy is PruningStrategy.PERCENTAGE:
-        return np.percentile(np.array(all_sal), value)
+        # calculate percentile
+        # e.g. np.percentile(all_sal, 90) will return the saliency value of the upper 90%
+        return np.percentile(all_sal, value)
     elif strategy is PruningStrategy.ABSOLUTE:
-        # check if there are enough elements to prune
-        if value >= len(all_sal):
-            return np.argmax(np.array(all_sal)).item() + 1
-        else:
-            # determine threshold
-            index = np.argsort(np.array(all_sal))[value]
-            return np.array(all_sal)[index].item()
+        # Retrieve the index of the weight at the position of the given threshold value
+        index = (
+            np.argsort(all_sal)[value]
+            if value < len(all_sal)
+            else np.argmax(all_sal).item()
+        )
+        return all_sal[index].item()
     elif strategy is PruningStrategy.BUCKET:
         sorted_array = np.sort(all_sal)
         sum_array = 0
