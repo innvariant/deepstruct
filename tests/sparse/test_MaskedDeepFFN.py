@@ -5,25 +5,22 @@ import torch.utils
 import deepstruct.sparse
 
 
-def test_get_structure():
+def test_set_random_masks():
     model = deepstruct.sparse.MaskedDeepFFN(784, 10, [20, 15, 12])
-    structure = model.generate_structure(include_input=True, include_output=True)
-    print(structure)
-    # TODO
+
+    for layer in deepstruct.sparse.maskable_layers(model):
+        random_mask = torch.tensor(np.random.binomial(1, 0.5, layer.mask.shape))
+        layer.mask = random_mask
 
 
-def test_generate_large_structure():
-    layers = [1000, 500, 500, 200, 100]
-    model = deepstruct.sparse.MaskedDeepFFN((1, 28, 28), 10, layers)
-    structure = model.generate_structure()
+def test_prune():
+    model = deepstruct.sparse.MaskedDeepFFN(784, 10, [1000, 500, 200, 100])
+    model.recompute_mask(theta=0.01)
+    model.apply_mask()
 
-    assert len(layers) == structure.num_layers
-    structure_layer_sizes = [structure.get_layer_size(lay) for lay in structure.layers]
-    for l1, l2 in zip(structure_layer_sizes, layers):
-        assert l1 == l2, "Structure %s did not match definition %s" % (
-            structure_layer_sizes,
-            layers,
-        )
+    for layer in deepstruct.sparse.maskable_layers(model):
+        print(layer.mask.shape)
+        print(torch.sum(layer.mask) / float(torch.numel(layer.mask)))
 
 
 def test_random_forward_possibly_on_gpu_success():
