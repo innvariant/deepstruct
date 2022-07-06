@@ -2,14 +2,31 @@
 Documentation for [deepstruct on github](https://github.com/innvariant/deepstruct).
 
 ### Notes
+- **2022-07-05** some pruning functionality was re-activated; good examples can also be found in the testing directory
 - **2022-05-05** added some simple examples as currently used in experiments
 - **2020-11-22** currently documenting the package
 
 
 ## Introduction
+Deepstruct provides tools and models in pytorch to easily work with all kinds of sparsity of neural networks.
+The four major approaches in that context are 1) **pruning** neural networks, 2) defining **prior structures** on neural networks, 3) **growing** neural network structures and 4) conducting graph-neural-network **round-trips**.
 
+![Visualization of pruning and growing neural nets.](methods-pruning-growing.png)
 
-## A simple example
+## Sparse Feed-forward Neural Net for MNIST
+```python
+import deepstruct.sparse
+from deepstruct.pruning import PruningStrategy, prune_network_by_saliency
+
+input_size = 784
+output_size = 10
+model = deepstruct.sparse.MaskedDeepFFN(input_size, output_size, [200, 100])
+
+# Prune 10% of the model based on its absolute weights
+prune_network_by_saliency(model, 10, strategy=PruningStrategy.PERCENTAGE)
+```
+
+## Creating Neural Nets from Graphs
 ```python
 import deepstruct.sparse
 
@@ -20,7 +37,7 @@ structure.add_nodes_from(range(20))
 model = deepstruct.sparse.MaskedDeepDAN(input_size, output_size, structure)
 ```
 
-## Creating neural nets from graphs
+## Binary Trees, Grids or Small-World Networks as Prior Structure of Neural Nets
 ```python
 import networkx as nx
 import deepstruct
