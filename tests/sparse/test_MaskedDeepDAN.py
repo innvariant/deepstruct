@@ -7,14 +7,31 @@ import deepstruct.sparse
 import deepstruct.util
 
 
-def test_traversal():
+def test_feed_success():
     # Arrange
+    n_samples = 100
+    size_batch = 7
+    shape_input = (105, 13)
+    size_target = 10
     random_graph = nx.watts_strogatz_graph(200, 3, 0.8)
     structure = deepstruct.graph.CachedLayeredGraph()
     structure.add_edges_from(random_graph.edges)
     structure.add_nodes_from(random_graph.nodes)
+    model = deepstruct.sparse.MaskedDeepDAN(shape_input, size_target, structure)
 
-    print([structure.in_degree(n) for n in structure.nodes])
+    features = [torch.randn((size_batch,) + shape_input) for _ in range(n_samples)]
+    targets = [torch.randint(size_target, size=(size_batch,)) for _ in range(n_samples)]
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    criterion = torch.nn.CrossEntropyLoss()
+
+    # Assert
+    for feat, target in zip(features, targets):
+        optimizer.zero_grad()
+        prediction = model(feat)
+        loss = criterion(prediction, target)
+        loss.backward()
+        optimizer.step()
 
 
 def test_random_structures_success():

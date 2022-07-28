@@ -21,22 +21,23 @@ documentation = "https://deepstruct.readthedocs.io"
 keywords = ["neural network", "sparsity", "machine learning", "structure", "graph", "training"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-torch = "^1.4"
+python = "^3.8"
+torch = "^1.7"
 networkx = "^2.0"
 importlib-metadata = "^4.4"
 importlib-resources = "^5.0"
 semantic_version = "^2.10"
 deprecated = "^1.2.10"
+numpy = "^1.22"
 
 [tool.poetry.dev-dependencies]
 black = "^22.3.0"
 matplotlib = { version = "^3.3" }
 pre-commit = "^2.3.0"
 pytest = "^7.1"
-pytest-mock = "^3.0.0"
+pytest-mock = "^3.0"
 pyfakefs = "^4.0.2"
-torchvision = "^0.6.1"
+torchvision = "^0.9"
 mkdocs = "^1.1.2"
 
 [tool.isort]

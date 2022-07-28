@@ -32,7 +32,7 @@ dependencies:
 - pip:
     - deepstruct
 ```
-- With *poetry* (recommended for *projects*) using PyPi: ``poetry add deepstruct``
+- With **poetry** (recommended for *projects*) using PyPi: ``poetry add deepstruct``
 - From public GitHub: ``pip install --upgrade git+ssh://git@github.com:innvariant/deepstruct.git``
 
 ## Quick usage: multi-layered feed-forward neural network on MNIST
