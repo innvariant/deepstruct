@@ -17,7 +17,9 @@ class LayeredGraph(nx.DiGraph):
     def load_from(graph: nx.DiGraph):
         structure = CachedLayeredGraph()
         structure.add_nodes_from([int(float(v)) for v in graph.nodes])
-        structure.add_edges_from([(int(float(s)), int(float(t))) for (s,t) in graph.edges])
+        structure.add_edges_from(
+            [(int(float(s)), int(float(t))) for (s, t) in graph.edges]
+        )
         return structure
 
     @property
@@ -475,7 +477,12 @@ def uniform_proportions(graph: nx.Graph):
     :param graph:
     :return:
     """
-    return {v: p for v, p in zip(graph.nodes, np.random.dirichlet(np.ones(len(graph.nodes)) * 100))}
+    return {
+        v: p
+        for v, p in zip(
+            graph.nodes, np.random.dirichlet(np.ones(len(graph.nodes)) * 100)
+        )
+    }
 
 
 def build_layer_index(graph: nx.DiGraph, layer_index=None):
