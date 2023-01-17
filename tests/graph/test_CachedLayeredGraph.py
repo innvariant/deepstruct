@@ -1,5 +1,6 @@
-import networkx as nx
 import os
+
+import networkx as nx
 import numpy as np
 
 import deepstruct.graph

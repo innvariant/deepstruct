@@ -189,7 +189,7 @@ class ScalableDAN(object):
         model = ScalableDAN.model(
             input_shape, output_shape, graph_scaled, use_layer_norm
         )
-        return model, graph_scaled if return_graph else model
+        return (model, graph_scaled) if return_graph else model
 
     @staticmethod
     def model(

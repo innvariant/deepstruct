@@ -55,4 +55,5 @@ Run ``act``
 
 ## Running pre-commit checks locally
 - Execute pre-commit manually: ``poetry run pre-commit run --all-files``
+- Update pre-commit: ``poetry run pre-commit autoupdate``
 - Add pre-commit to your local git: ``poetry run pre-commit install``
