@@ -12,7 +12,7 @@ def test_linear_simple_compression():
     assert size_layer_2 < size_layer_1
     model = torch.nn.Linear(size_layer_1, size_layer_2)
     # Make sure each weight is large enough so none is getting "pruned"
-    model.weight[:, :].data += 1
+    model.weight.data += 1
     functor = LinearLayerFunctor(threshold=0.01)
 
     # Act
@@ -31,7 +31,7 @@ def test_linear_simple_expansion():
     size_layer_2 = 8
     assert size_layer_2 > size_layer_1
     model = torch.nn.Linear(size_layer_1, size_layer_2)
-    model.weight[:, :].data = torch.tensor(
+    model.weight.data = torch.tensor(
         np.random.uniform(1, 2, size=(size_layer_2, size_layer_1)), dtype=torch.float32
     )
     functor = LinearLayerFunctor(threshold=0.01)
@@ -54,7 +54,7 @@ def test_linear_sparse():
     weights = np.random.uniform(1, 2, size=(size_layer_2, size_layer_1))
     mask = np.random.binomial(1, 0.3, size=(size_layer_2, size_layer_1))
     num_edges = np.sum(mask)
-    model.weight[:, :].data = torch.tensor(weights * mask, dtype=torch.float32)
+    model.weight.data = torch.tensor(weights * mask, dtype=torch.float32)
     functor = LinearLayerFunctor(threshold=0.01)
 
     # Act
