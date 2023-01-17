@@ -28,10 +28,14 @@ stages:
     expire_in: 1 week
 
 # Test Jobs
-test-python3.7:
-  <<: *test
-  image: python:3.7
-
 test-python3.8:
   <<: *test
   image: python:3.8
+
+test-python3.9:
+  <<: *test
+  image: python:3.9
+
+test-python3.10:
+  <<: *test
+  image: python:3.10
