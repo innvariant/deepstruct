@@ -33,7 +33,7 @@ def test_mnist_large():
         model.generate_structure()
     )  # Get the structure -- a networkx graph -- based on the current mask
 
-    new_model = deepstruct.sparse.MaskedDeeepDAN(784, 10, pruned_structure)
+    new_model = deepstruct.sparse.MaskedDeepDAN(784, 10, pruned_structure)
 
     # Define transform to normalize data
     transform = transforms.Compose(
@@ -64,6 +64,12 @@ def test_mnist_large():
         loss = criterion(prediction, target)
         loss.backward()
         optimizer.step()
+
+    new_model.eval()
+    for feat, target in testloader:
+        prediction = new_model(feat)
+        loss = criterion(prediction, target)
+        print(loss)
 
 
 def test_torchvision_large():
