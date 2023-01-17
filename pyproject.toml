@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "deepstruct"
-version = "0.9.0"
+version = "0.9.0-devee"
 description = ""
 authors = [
     "Julian Stier <julian.stier@uni-passau.de>"
