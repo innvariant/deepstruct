@@ -5,6 +5,21 @@ import numpy as np
 
 
 class LayeredGraph(nx.DiGraph):
+    def save(self, path):
+        nx.write_graphml(self, path)
+
+    @staticmethod
+    def load(path):
+        graph = nx.read_graphml(path)
+        return LayeredGraph.load_from(graph)
+
+    @staticmethod
+    def load_from(graph: nx.DiGraph):
+        structure = CachedLayeredGraph()
+        structure.add_nodes_from([int(float(v)) for v in graph.nodes])
+        structure.add_edges_from([(int(float(s)), int(float(t))) for (s,t) in graph.edges])
+        return structure
+
     @property
     def first_layer(self):
         """
@@ -450,6 +465,17 @@ class LabeledDAG(LayeredGraph):
 class MarkableDAG(LabeledDAG):
     def add_connection(self, mark: str, s_idx: int, t_idx: int):
         pass
+
+
+def uniform_proportions(graph: nx.Graph):
+    """
+    Samples weights from a dirichlet distribution for each vertex of a given graph such that all of them add up to one
+    and are almost uniformly distributed.
+
+    :param graph:
+    :return:
+    """
+    return {v: p for v, p in zip(graph.nodes, np.random.dirichlet(np.ones(len(graph.nodes)) * 100))}
 
 
 def build_layer_index(graph: nx.DiGraph, layer_index=None):
