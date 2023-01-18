@@ -1,5 +1,8 @@
 import itertools
 
+from typing import Tuple
+from typing import Union
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -86,6 +89,10 @@ class ScalableDAN(object):
         self.structure = structure
         self.proportions = proportion_map
 
+    def reset(self):
+        self._cached_scaled_structure = None
+        self._vertex_correspondences = None
+
     @property
     def structure(self):
         return self._structure
@@ -157,14 +164,39 @@ class ScalableDAN(object):
         return graph_scaled
 
     def build(
-        self, input_shape, output_shape, scale: int, use_layer_norm: bool = True
-    ) -> nn.Module:
+        self,
+        input_shape,
+        output_shape,
+        scale: int,
+        use_layer_norm: bool = True,
+        return_graph: bool = False,
+    ) -> Union[nn.Module, Tuple[nn.Module, LayeredGraph]]:
+        """
+        Grows the underlying base graph with the given scale parameter and the specified proportions per vertex and
+        returns a neural network based on MaskedDeepDAN.
+
+        :param input_shape: Input dimensions for the model to build, e.g. 784 or (28, 28) for MNIST.
+        :param output_shape: Output dimensions for the model to build, e.g. 10 for MNIST or CIFAR10.
+        :param scale: Number of neurons to distribute across the blocks of the layer graph.
+        :param use_layer_norm: Specifies whether the model should use layer normalizations after single blocks
+        :param return_graph: Specifies whether to return the scaled graph; introduced in 0.10
+        :return:
+        """
         assert scale > 0
         graph_scaled = self.grow(scale)
-        self._cached_scaled_structure = None
-        self._vertex_correspondences = None
+        self.reset()
+
+        model = ScalableDAN.model(
+            input_shape, output_shape, graph_scaled, use_layer_norm
+        )
+        return (model, graph_scaled) if return_graph else model
+
+    @staticmethod
+    def model(
+        input_shape, output_shape, structure: LayeredGraph, use_layer_norm: bool = True
+    ):
         return MaskedDeepDAN(
-            input_shape, output_shape, graph_scaled, use_layer_norm=use_layer_norm
+            input_shape, output_shape, structure, use_layer_norm=use_layer_norm
         )
 
 

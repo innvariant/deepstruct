@@ -13,9 +13,8 @@ def test_conv_simple():
     model = torch.nn.Conv2d(
         in_channels=channels_in, out_channels=2, kernel_size=kernel_size, stride=1
     )
-    model.weight[
-        :, :
-    ] += 10  # Make sure each weight is large enough so none is getting "pruned"
+    # Make sure each weight is large enough so none is getting "pruned"
+    model.weight[:, :].data += 10
 
     functor = Conv2dLayerFunctor(input_width, input_height, threshold=0.01)
 
@@ -46,9 +45,8 @@ def test_conv_nonsquare_kernel():
     model = torch.nn.Conv2d(
         in_channels=channels_in, out_channels=2, kernel_size=kernel_size, stride=1
     )
-    model.weight[
-        :, :
-    ] += 10  # Make sure each weight is large enough so none is getting "pruned"
+    # Make sure each weight is large enough so none is getting "pruned"
+    model.weight[:, :].data += 10
 
     functor = Conv2dLayerFunctor(input_width, input_height, threshold=0.01)
 
@@ -78,9 +76,8 @@ def test_conv_multiple_configs():
                     kernel_size=kernel_size,
                     stride=stride,
                 )
-                model.weight[
-                    :, :
-                ] += 10  # Make sure each weight is large enough so none is getting "pruned"
+                # Make sure each weight is large enough so none is getting "pruned"
+                model.weight[:, :].data += 10
                 models.append(model)
 
     functor = Conv2dLayerFunctor(input_width, input_height, threshold=0.01)
@@ -106,9 +103,8 @@ def test_realistic_convolution():
     model = torch.nn.Conv2d(
         in_channels=channels_in, out_channels=2, kernel_size=kernel_size, stride=1
     )
-    model.weight[
-        :, :
-    ] += 10  # Make sure each weight is large enough so none is getting "pruned"
+    # Make sure each weight is large enough so none is getting "pruned"
+    model.weight[:, :].data += 10
     output = model.forward(torch.rand(size=(1, channels_in, input_height, input_width)))
     number_output_features = np.prod(output.shape)
 

@@ -31,11 +31,10 @@ def test_stacked_graph():
     size_input = 20
     size_hidden = 4
     model = SimpleNet(size_input, size_hidden)
-    model._linear1.weight[
-        :, :
-    ] += 1  # Make sure each weight is large enough so none is getting "pruned"
-    model._linear2.weight[:, :] += 1
-    model._conv.weight[:, :] += 1
+    # Make sure each weight is large enough so none is getting "pruned"
+    model._linear1.weight[:, :].data += 1
+    model._linear2.weight[:, :].data += 1
+    model._conv.weight[:, :].data += 1
 
     functor = GraphTransform(torch.randn((1, 20)))
 
@@ -52,7 +51,7 @@ def test_deep_ffn():
     output_size = 10
     model = deepstruct.sparse.MaskedDeepFFN(shape_input, output_size, layers)
     for layer in deepstruct.sparse.maskable_layers(model):
-        layer.weight[:, :] += 1  # make sure everything is fully connected
+        layer.weight[:, :].data += 1  # make sure everything is fully connected
 
     functor = GraphTransform(torch.randn((1,) + shape_input))
 
@@ -76,7 +75,7 @@ def test_deep_ffn2():
     output_size = 10
     model = deepstruct.sparse.MaskedDeepFFN(shape_input, output_size, layers)
     for layer in deepstruct.sparse.maskable_layers(model):
-        layer.weight[:, :] += 1  # make sure everything is fully connected
+        layer.weight[:, :].data += 1  # make sure everything is fully connected
 
     functor = GraphTransform(torch.randn((1,) + shape_input))
 
@@ -104,7 +103,7 @@ def test_deep_dan():
     structure.add_nodes_from(random_graph.nodes)
     model = deepstruct.sparse.MaskedDeepDAN(shape_input, output_size, structure)
     for layer in deepstruct.sparse.maskable_layers(model):
-        layer.weight[:, :] += 1  # make sure everything is fully connected
+        layer.weight[:, :].data += 1  # make sure everything is fully connected
 
     functor = GraphTransform(torch.randn((1,) + shape_input))
 

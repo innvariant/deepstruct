@@ -294,7 +294,7 @@ class MaskedDeepDAN(MaskableModule):  # nn.Module
                     source_layer = skip_target["layer"]
                     source_idx = skip_target["source"]
 
-                    out += self.activation(source_layer(layer_results[source_idx]))
+                    out = out + self.activation(source_layer(layer_results[source_idx]))
 
             layer_results[layer_idx] = out  # copy?
             last_output = out

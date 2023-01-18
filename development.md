@@ -47,7 +47,7 @@ apt-get install gitlab-runner
 $ gitlab-runner -v
 Version:      12.3.0
 ```
-Execute job *tests*: ``gitlab-runner exec docker test-python3.7``
+Execute job *tests*: ``gitlab-runner exec docker test-python3.9``
 
 ## Running github action locally
 Install *https://github.com/nektos/act*.
@@ -55,4 +55,5 @@ Run ``act``
 
 ## Running pre-commit checks locally
 - Execute pre-commit manually: ``poetry run pre-commit run --all-files``
+- Update pre-commit: ``poetry run pre-commit autoupdate``
 - Add pre-commit to your local git: ``poetry run pre-commit install``

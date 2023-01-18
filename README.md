@@ -1,4 +1,4 @@
-# deepstruct - neural network structure tool [![PyPI version](https://badge.fury.io/py/deepstruct.svg)](https://badge.fury.io/py/deepstruct) ![Tests](https://github.com/innvariant/deepstruct/workflows/Tests/badge.svg) [![Documentation Status](https://readthedocs.org/projects/deepstruct/badge/?version=latest)](https://deepstruct.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://pepy.tech/badge/deepstruct)](https://pepy.tech/project/deepstruct) [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/) [![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-370/) [![Python 3.6](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
+# deepstruct - neural network structure tool [![PyPI version](https://badge.fury.io/py/deepstruct.svg)](https://badge.fury.io/py/deepstruct) ![Tests](https://github.com/innvariant/deepstruct/workflows/Tests/badge.svg) [![Documentation Status](https://readthedocs.org/projects/deepstruct/badge/?version=latest)](https://deepstruct.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://pepy.tech/badge/deepstruct)](https://pepy.tech/project/deepstruct)  [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 Create deep neural networks based on very different kinds of graphs or use *deepstruct* to extract the structure of your deep neural network.
 
 Deepstruct combines tools for fusing machine learning and graph theory.
@@ -32,7 +32,7 @@ dependencies:
 - pip:
     - deepstruct
 ```
-- With *poetry* (recommended for *projects*) using PyPi: ``poetry add deepstruct``
+- With **poetry** (recommended for *projects*) using PyPi: ``poetry add deepstruct``
 - From public GitHub: ``pip install --upgrade git+ssh://git@github.com:innvariant/deepstruct.git``
 
 ## Quick usage: multi-layered feed-forward neural network on MNIST

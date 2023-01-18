@@ -1,6 +1,25 @@
+import os
+
+import networkx as nx
 import numpy as np
 
 import deepstruct.graph
+
+
+def test_store_load(tmp_path):
+    path_graph = os.path.join(tmp_path, "tmp.graphml")
+
+    l0 = deepstruct.graph.CachedLayeredGraph()
+    l0.add_nodes_from([1, 2, 3, 4, 5])
+    l0.add_edges_from([(1, 3), (2, 4), (3, 4), (4, 5)])
+    l0.save(path_graph)
+
+    l1 = deepstruct.graph.LayeredGraph.load(path_graph)
+
+    assert l1 is not None
+    assert len(l1.nodes) == len(l0.nodes)
+    assert len(l1.edges) == len(l0.edges)
+    assert nx.is_isomorphic(l0, l1)
 
 
 def test_cached_layered_graph_default_success():
