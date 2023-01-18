@@ -1,5 +1,12 @@
 # Changelog for deepstruct
 
+## 0.10
+* bug-fix for 'RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation' caused by in-place operation in model (thanks to Mohammad Alahmad)
+* new methods for scalable models from a underlying computational theme structure
+* more explicit methods to store and re-load a cached layered graph
+* some documentation on base module *MaskedLinearLayer*
+* dependency updates
+
 ## 0.9
 * re-introduced saliency as an optional additional property on MaskedLinearLayers for communicating saliency measures on weight-level to decide on further pruning
 * fixed some of the simpler pruning functions such as prune_network_by_saliency() and prune_layer_by_saliency() from deepstruct.pruning
