@@ -14,7 +14,7 @@ def test_store_load(tmp_path):
     l0.add_edges_from([(1, 3), (2, 4), (3, 4), (4, 5)])
     l0.save(path_graph)
 
-    l1 = deepstruct.graph.CachedLayeredGraph.load(path_graph)
+    l1 = deepstruct.graph.LayeredGraph.load(path_graph)
 
     assert l1 is not None
     assert len(l1.nodes) == len(l0.nodes)

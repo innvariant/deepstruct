@@ -6,7 +6,10 @@ import numpy as np
 
 class LayeredGraph(nx.DiGraph):
     def save(self, path):
-        nx.write_graphml(self, path)
+        struct = nx.relabel_nodes(
+            self, {name: ix for ix, name in enumerate(self.nodes)}
+        )
+        nx.write_graphml(struct, path)
 
     @staticmethod
     def load(path):
@@ -14,11 +17,12 @@ class LayeredGraph(nx.DiGraph):
         return LayeredGraph.load_from(graph)
 
     @staticmethod
-    def load_from(graph: nx.DiGraph):
+    def load_from(graph: nx.DiGraph) -> LayeredGraph:
         structure = CachedLayeredGraph()
-        structure.add_nodes_from([int(float(v)) for v in graph.nodes])
+        map_old2new = {name: ix for ix, name in enumerate(graph.nodes)}
+        structure.add_nodes_from([map_old2new[v] for v in graph.nodes])
         structure.add_edges_from(
-            [(int(float(s)), int(float(t))) for (s, t) in graph.edges]
+            [(map_old2new[s], map_old2new[t]) for (s, t) in graph.edges]
         )
         return structure
 
