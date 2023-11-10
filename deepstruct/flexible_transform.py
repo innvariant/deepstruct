@@ -1,8 +1,6 @@
 import torch
-import networkx as nx
-from torch import nn
-import matplotlib.pyplot as plt
 
+from deepstruct.constants import DEFAULT_OPERATIONS
 from deepstruct.node_map_strategies import NodeMapStrategy, HighLevelNodeMapListStrategy
 from deepstruct.traverse_strategies import TraversalStrategy, FrameworkTraversal
 
@@ -12,17 +10,7 @@ class Transformer:
                  node_map_strategy: NodeMapStrategy = None, namespaces_relevant_ops=None):
         self.random_input = random_input
         if namespaces_relevant_ops is None:
-            self.namespaces_relevant_ops = [
-                (torch, "add"),
-                (torch.Tensor, "add"),
-                (torch, "cos"),
-                (torch.nn.modules.conv.Conv2d, "forward"),
-                (torch.nn.modules.Linear, "forward"),
-                (torch.nn.modules.MaxPool2d, "forward"),
-                (torch.nn.modules.Flatten, "forward"),
-                (torch.nn.modules.BatchNorm2d, "forward"),
-                (torch.nn.functional, "relu")
-            ]
+            self.namespaces_relevant_ops = DEFAULT_OPERATIONS
         else:
             self.namespaces_relevant_ops = namespaces_relevant_ops
         if traversal_strategy is None:
