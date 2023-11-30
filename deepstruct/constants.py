@@ -9,6 +9,8 @@ DEFAULT_OPERATIONS = [
     (torch.nn.modules.MaxPool2d, "forward"),
     (torch.nn.modules.Flatten, "forward"),
     (torch.nn.modules.BatchNorm2d, "forward"),
-    (torch.nn.functional, "relu")
+    (torch.nn.functional, "relu"),
+    (torch.Tensor, "view"),
+    (torch.Tensor, "size")
 ]
 

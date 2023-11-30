@@ -1,11 +1,7 @@
 from abc import abstractmethod
+from typing import Callable
 
-
-class NodeMapStrategy:
-
-    @abstractmethod
-    def map_node(self, func_module, graph, output_shape, func_name, input_shape=None):
-        pass
+import torch.nn
 
 
 class NodeMapper:
@@ -15,39 +11,42 @@ class NodeMapper:
         pass
 
 
-class HighLevelNodeMapListStrategy(NodeMapStrategy):
+class CustomNodeMap:
+
+    def __init__(self, node_mappers: dict, default_mapper: NodeMapper):
+        self.node_mappers = node_mappers
+        self.default_mapper = default_mapper
+
+    def map_node(self, func_module, graph, output_shape, func_name, input_shape=None):
+        # node_name = func_module.__name__ + " " + func_name
+        node_name = func_name
+        self.node_mappers.get(func_module, self.default_mapper).add_node(graph, output_shape, node_name, input_shape)
+
+
+class HighLevelNodeMap(CustomNodeMap):
 
     def __init__(self):
-        self.high_level_mapper = All2VertexNodeMapper()
-
-    def map_node(self, func_module, graph, output_shape, func_name, input_shape=None):
-        node_name = func_module.__name__ + " " + func_name
-        self.high_level_mapper.add_node(graph, output_shape, node_name, input_shape)
+        super().__init__({}, All2VertexNodeMapper())
 
 
-class CustomNodeMapListStrategy(NodeMapStrategy):
-    """ The node_mapper_strategies must contain the full_namespace.class as key and a desired node-mapper
-     strategy as value """
+class LowLevelNodeMap(CustomNodeMap):
 
-    def __init__(self, node_mapper_strategies: dict, default_strategy: NodeMapper):
-        self.node_mapper_strategies = node_mapper_strategies
-        self.default_strategy = default_strategy
+    def __int__(self):
+        super().__init__({
+            torch.nn.Linear: Linear2LayerMapper(),
 
-    def map_node(self, func_module, graph, output_shape, func_name, input_shape=None):
-        if func_module in self.node_mapper_strategies.keys():
-            self.node_mapper_strategies.get(func_module).add_node(graph, output_shape, func_name, input_shape)
-        else:
-            self.default_strategy.add_node(graph, output_shape, func_name, input_shape)
-        pass
+        }, All2VertexNodeMapper())
 
 
 class All2VertexNodeMapper(NodeMapper):
 
     def add_node(self, graph, output_shape, func_name, input_shape=None):
         graph.add_vertex(func_name)
+        print(func_name, input_shape, output_shape)
 
 
 class Linear2LayerMapper(NodeMapper):
+
     def add_node(self, graph, output_shape, func_name, input_shape=None):
         pass
 
@@ -67,3 +66,12 @@ class Conv2VertexMapper(NodeMapper):
 
     def add_node(self, graph, output_shape, func_name, input_shape=None):
         pass
+
+
+class GenericVertexMapper(NodeMapper):
+
+    def __int__(self, add_node_implementation: Callable):
+        self.add_node_implementation = add_node_implementation
+
+    def add_node(self, graph, output_shape, func_name, input_shape=None):
+        self.add_node_implementation(graph, output_shape, func_name, input_shape)
