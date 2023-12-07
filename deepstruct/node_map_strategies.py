@@ -40,9 +40,14 @@ class LowLevelNodeMap(CustomNodeMap):
 
 class All2VertexNodeMapper(NodeMapper):
 
+    def __init__(self):
+        self.layer = 0
+
     def add_node(self, graph, output_shape, func_name, input_shape=None):
-        graph.add_vertex(func_name)
-        print(func_name, input_shape, output_shape)
+        added_node = graph.add_vertex(layer=self.layer, name=func_name)
+        if self.layer > 0:
+            graph.add_edge(self.layer - 1, added_node)
+        self.layer += 1
 
 
 class Linear2LayerMapper(NodeMapper):

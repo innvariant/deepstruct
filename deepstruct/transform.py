@@ -135,7 +135,7 @@ class Conv2dLayerFunctor(ForgetfulFunctor):
         input_neurons = graph.add_vertices(
             channels_in * self._input_width * self._input_height, layer=0
         )
-
+            # HIER WEITER
         def output_shape(size, dim):
             return int(
                 np.floor((size - size_kernel[dim] + 2 * padding[dim]) / stride[dim]) + 1
