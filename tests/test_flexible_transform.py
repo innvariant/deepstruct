@@ -5,6 +5,8 @@ import torch
 import torchvision.models
 from matplotlib import pyplot as plt
 from torch import nn
+
+import deepstruct.sparse
 from deepstruct.flexible_transform import GraphTransform
 import torch.nn.functional as F
 
@@ -144,7 +146,8 @@ def test_fx_transformer_simple_network_includes_excludes():
     net = SimpleCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
     graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
-        exclude_fn=[torch.cos, torch.Tensor.size],  # TODO: size still included
+        exclude_fn=[torch.cos, "size"],  # size is a string, seems like functions are traced as strings
+        # whereas methods are function types
         include_modules=[torch.nn.modules.Linear, torch.nn.modules.Conv2d]))
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
@@ -156,11 +159,34 @@ def test_fx_transformer_simple_network_includes_excludes():
     assert all(name in test_names for name in graph_names)
 
 
-def test_fx_resnet18():
+def test_fx_fold_modules():
     resnet = torchvision.models.resnet18(True)
     input_tensor = torch.rand(1, 3, 224, 224)
     graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
-        include_fn=[torch.Tensor.add, torch.add]))
+        fold_modules=[torch.nn.modules.Sequential]))
     graph_transformer.transform(resnet)
     graph = graph_transformer.get_graph()
+    assert len(graph.nodes) == 13
     plot_graph(graph, "Transformation")
+
+
+def test_fx_unfold_modules():
+    net = SimpleCNN()
+    input_tensor = torch.randn(1, 1, 6, 6)
+    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
+        unfold_modules=[torch.nn.modules.Linear]
+    ))
+    graph_transformer.transform(net)
+    graph = graph_transformer.get_graph()
+    plot_graph(graph, "Transformation")
+
+
+def test_build_model_from_graph():
+    net = SimpleCNN()
+    input_tensor = torch.randn(1, 1, 6, 6)
+    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal())
+    graph_transformer.transform(net)
+    graph = graph_transformer.get_graph()
+    print(len(graph.nodes))
+    model = deepstruct.sparse.MaskedDeepDAN(6, 2, graph)
+    print(model)

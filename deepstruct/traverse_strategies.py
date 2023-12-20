@@ -47,7 +47,7 @@ class TraversalStrategy(ABC):
 class FXTraversal(TraversalStrategy):
 
     def __init__(self, distribution_fn=np.random.normal, include_fn=None, include_modules=None, exclude_fn=None,
-                 exclude_modules=None):
+                 exclude_modules=None, fold_modules=None, unfold_modules=None):
         self.distribution_fn = distribution_fn
         self.include_fn = include_fn
         self.include_modules = include_modules
@@ -55,12 +55,16 @@ class FXTraversal(TraversalStrategy):
         self.exclude_modules = exclude_modules
         self.node_map_strategy = None
         self.layered_graph = LabeledDAG()
+        self.fold_modules = fold_modules
+        self.unfold_modules = unfold_modules
 
     def init(self, node_map_strategy: CustomNodeMap):
         self.node_map_strategy = node_map_strategy
 
     def traverse(self, input_tensor: torch.Tensor, model: torch.nn.Module):
         dist_fn = self.distribution_fn
+        unfold = self.unfold_modules if self.unfold_modules else []
+        fold = self.fold_modules if self.fold_modules else []
 
         class CustomTracer(torch.fx.Tracer):
 
@@ -92,6 +96,14 @@ class FXTraversal(TraversalStrategy):
                             kwargs: Dict[str, Any]) -> Any:
                 self.orig_mod = m
                 return super().call_module(m, forward, args, kwargs)
+
+            def is_leaf_module(self, m: torch.nn.Module, module_qualified_name: str) -> bool:
+                if any(isinstance(m, fm) for fm in fold):
+                    return True
+                elif any(isinstance(m, um) for um in unfold):
+                    return False
+                else:
+                    return super().is_leaf_module(m, module_qualified_name)
 
         traced_graph = CustomTracer().trace(model)
         traced = torch.fx.GraphModule(model, traced_graph)
