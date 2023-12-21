@@ -14,7 +14,7 @@ from deepstruct.traverse_strategies import FXTraversal, FrameworkTraversal
 
 
 def plot_graph(graph, title):
-    labels = {node: graph.nodes[node]['name'] for node in graph.nodes()}
+    labels = nx.get_node_attributes(graph, 'name')
     fig, ax = plt.subplots(figsize=(10, 10))
     nx.draw(graph, labels=labels, with_labels=True, node_size=700, node_color='lightblue', font_size=8,
             ax=ax)
@@ -67,7 +67,7 @@ class ControlFlowCNN(nn.Module):
         return x
 
 
-def test_transformer():
+def test_framework_transformer():
     net = SimpleCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
     graph_transformer = GraphTransform(input_tensor, traversal_strategy=FrameworkTraversal())
@@ -84,7 +84,7 @@ def test_fx_transformer_simple_network():
     plot_graph(graph, "Transformation")
     simplenet_names = ["cos", "fc", "size", "view", "pool", "relu", "conv1", "x", "output"]
     assert len(graph.nodes) == len(simplenet_names)
-    graph_names = dict(graph.nodes(data='name')).values()
+    graph_names = nx.get_node_attributes(graph, 'name').values()
     assert all(name in graph_names for name in simplenet_names)
     assert all(name in simplenet_names for name in graph_names)
 
@@ -119,7 +119,7 @@ def test_fx_transformer_simple_network_excludes():
     simplenet_names = ["cos", "fc", "size", "view", "pool", "relu", "conv1", "x", "output"]
     test_names = ["size", "view", "conv1", "x", "output"]
     assert len(graph.nodes) == len(simplenet_names) - len(excluded_modules) - len(excluded_functions)
-    graph_names = dict(graph.nodes(data='name')).values()
+    graph_names = nx.get_node_attributes(graph, 'name').values()
     assert all(name in graph_names for name in test_names)
     assert all(name in test_names for name in graph_names)
 
@@ -137,7 +137,7 @@ def test_fx_transformer_simple_network_includes():
     plot_graph(graph, "Transformation")
     test_names = ["cos", "pool", "conv1", "x", "output"]
     assert len(graph.nodes) == len(included_functions) + len(included_modules) + 2  # count input and output
-    graph_names = dict(graph.nodes(data='name')).values()
+    graph_names = nx.get_node_attributes(graph, 'name').values()
     assert all(name in graph_names for name in test_names)
     assert all(name in test_names for name in graph_names)
 
@@ -146,15 +146,14 @@ def test_fx_transformer_simple_network_includes_excludes():
     net = SimpleCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
     graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
-        exclude_fn=[torch.cos, "size"],  # size is a string, seems like functions are traced as strings
-        # whereas methods are function types
+        exclude_fn=[torch.cos, torch.Tensor.size],
         include_modules=[torch.nn.modules.Linear, torch.nn.modules.Conv2d]))
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation")
     test_names = ["fc", "view", "relu", "conv1", "x", "output"]
     assert len(graph.nodes) == len(test_names)
-    graph_names = dict(graph.nodes(data='name')).values()
+    graph_names = nx.get_node_attributes(graph, 'name').values()
     assert all(name in graph_names for name in test_names)
     assert all(name in test_names for name in graph_names)
 
@@ -190,3 +189,20 @@ def test_build_model_from_graph():
     print(len(graph.nodes))
     model = deepstruct.sparse.MaskedDeepDAN(6, 2, graph)
     print(model)
+
+
+def test_fx_resnet18():
+    print(" ")
+    resnet = torchvision.models.resnet18(True)
+    input_tensor = torch.rand(1, 3, 224, 224)
+    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal())
+    graph_transformer.transform(resnet)
+    graph = graph_transformer.get_graph()
+    print(len(graph.nodes))
+    graph_names = nx.get_node_attributes(graph, 'name').values()
+    graph_shapes = nx.get_node_attributes(graph, 'shape').values()
+    graph_modules = nx.get_node_attributes(graph, 'origin_module').values()
+    print(graph_names)
+    print(graph_shapes)
+    print(graph_modules)
+    plot_graph(graph, "Transformation")

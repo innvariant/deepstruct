@@ -8,6 +8,7 @@ from inspect import isfunction
 from types import ModuleType
 from typing import Tuple, Dict, Optional, Any, Union, Callable
 
+import networkx
 import numpy as np
 import numpy.random
 from torch.fx import Node
@@ -48,6 +49,7 @@ class FXTraversal(TraversalStrategy):
 
     def __init__(self, distribution_fn=np.random.normal, include_fn=None, include_modules=None, exclude_fn=None,
                  exclude_modules=None, fold_modules=None, unfold_modules=None):
+        self.traced_model = None
         self.distribution_fn = distribution_fn
         self.include_fn = include_fn
         self.include_modules = include_modules
@@ -55,6 +57,7 @@ class FXTraversal(TraversalStrategy):
         self.exclude_modules = exclude_modules
         self.node_map_strategy = None
         self.layered_graph = LabeledDAG()
+        self.layered_graph.current_layer = 0
         self.fold_modules = fold_modules
         self.unfold_modules = unfold_modules
 
@@ -110,6 +113,9 @@ class FXTraversal(TraversalStrategy):
         traced_modules = dict(traced.named_modules())
         from torch.fx.passes.shape_prop import ShapeProp
         ShapeProp(traced).propagate(input_tensor)
+        self.traced_model = traced
+        print(" ")
+        traced.graph.print_tabular()
 
         class EmptyShape:
             def __init__(self):
@@ -119,7 +125,17 @@ class FXTraversal(TraversalStrategy):
             if self._should_be_included(node):
                 module_instance = traced_modules.get(node.target)
                 shape = node.meta.get('tensor_meta', EmptyShape()).shape
-                self.node_map_strategy.map_node(type(module_instance), self.layered_graph, shape, node.name)
+                self.node_map_strategy.map_node(
+                    self.layered_graph,
+                    type(module_instance),
+                    node.args,
+                    name=node.name,
+                    shape=shape,
+                    origin_module=node.orig_mod
+                )
+                self.layered_graph.current_layer += 1
+            else:
+                self.node_map_strategy.ignore_node(node.name)
 
     def _should_be_included(self, node):
         if node.op == 'placeholder' or node.op == 'output' or node.op == 'get_attr':
@@ -135,7 +151,7 @@ class FXTraversal(TraversalStrategy):
         if node.op == 'call_module' and len(include_modules) > 0:
             return any(isinstance(node.orig_mod, m) for m in include_modules)
         elif len(include_fn) > 0:
-            return any(node.orig_mod == f for f in include_fn)
+            return any(node.orig_mod == f or node.orig_mod == getattr(f, '__name__', None) for f in include_fn)
         else:
             return True
 
@@ -147,7 +163,7 @@ class FXTraversal(TraversalStrategy):
         if node.op == 'call_module':
             return any(isinstance(node.orig_mod, m) for m in exclude_modules)
         else:
-            return any(node.orig_mod == f for f in exclude_fn)
+            return any(node.orig_mod == f or node.orig_mod == getattr(f, '__name__', None) for f in exclude_fn)
 
     def restore_traversal(self):
         pass
