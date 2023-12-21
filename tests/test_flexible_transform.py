@@ -10,6 +10,7 @@ import deepstruct.sparse
 from deepstruct.flexible_transform import GraphTransform
 import torch.nn.functional as F
 
+from deepstruct.node_map_strategies import LowLevelNodeMap
 from deepstruct.traverse_strategies import FXTraversal, FrameworkTraversal
 
 
@@ -198,11 +199,18 @@ def test_fx_resnet18():
     graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal())
     graph_transformer.transform(resnet)
     graph = graph_transformer.get_graph()
-    print(len(graph.nodes))
-    graph_names = nx.get_node_attributes(graph, 'name').values()
-    graph_shapes = nx.get_node_attributes(graph, 'shape').values()
-    graph_modules = nx.get_node_attributes(graph, 'origin_module').values()
-    print(graph_names)
-    print(graph_shapes)
-    print(graph_modules)
     plot_graph(graph, "Transformation")
+
+
+def test_fx_low_level_linear():
+    print(" ")
+    net = SimpleCNN()
+    input_tensor = torch.randn(1, 1, 6, 6)
+    graph_transformer = GraphTransform(input_tensor,
+                                       traversal_strategy=FXTraversal(),
+                                       node_map_strategy=LowLevelNodeMap()
+                                       )
+    graph_transformer.transform(net)
+    graph = graph_transformer.get_graph()
+    plot_graph(graph, "Transformation")
+
