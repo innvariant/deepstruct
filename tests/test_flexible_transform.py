@@ -40,6 +40,25 @@ class SimpleCNN(nn.Module):
         return x
 
 
+class SmallCNN(nn.Module):
+    def __init__(self):
+        super(SmallCNN, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=6, stride=1, padding=1)
+        self.pool = nn.MaxPool2d(kernel_size=1, stride=1, padding=0)
+        self.fc = nn.Linear(9, 2)
+        self.fc2 = nn.Linear(2, 1) 
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.pool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        x = self.fc2(x)
+        x = torch.cos(x)
+        return x
+
+
 class FuncConstructorCNN(nn.Module):
     def __init__(self):
         super(FuncConstructorCNN, self).__init__()
@@ -204,7 +223,7 @@ def test_fx_resnet18():
 
 def test_fx_low_level_linear():
     print(" ")
-    net = SimpleCNN()
+    net = SmallCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
     graph_transformer = GraphTransform(input_tensor,
                                        traversal_strategy=FXTraversal(),
@@ -213,4 +232,3 @@ def test_fx_low_level_linear():
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation")
-
