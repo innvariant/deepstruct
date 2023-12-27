@@ -16,7 +16,7 @@ from torch.fx.node import Target, Argument, Node
 
 from deepstruct.graph import LabeledDAG
 from deepstruct.node_map_strategies import CustomNodeMap
-from deepstruct.topologie_representation import LayeredGraph
+from deepstruct.topologie_representation import LayeredGraph, LayeredFXGraph
 from deepstruct.constants import DEFAULT_OPERATIONS
 
 import torch
@@ -56,8 +56,7 @@ class FXTraversal(TraversalStrategy):
         self.exclude_fn = exclude_fn
         self.exclude_modules = exclude_modules
         self.node_map_strategy = None
-        self.layered_graph = LabeledDAG()
-        self.layered_graph.current_layer = 0
+        self.layered_graph = LayeredFXGraph()
         self.fold_modules = fold_modules
         self.unfold_modules = unfold_modules
 
@@ -135,11 +134,13 @@ class FXTraversal(TraversalStrategy):
                 )
                 self.layered_graph.current_layer += 1
             else:
-                self.node_map_strategy.ignore_node(node.name)
+                self.layered_graph.ignored_nodes.append(node.name)
 
     def _should_be_included(self, node):
-        if node.op == 'placeholder' or node.op == 'output' or node.op == 'get_attr':
+        if node.op == 'placeholder' or node.op == 'output':
             return True
+        elif node.op == 'get_attr':
+            return False
         else:
             return self._is_in_include(node) and not self._is_in_exclude(node)
 

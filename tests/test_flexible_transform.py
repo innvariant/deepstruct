@@ -46,7 +46,7 @@ class SmallCNN(nn.Module):
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=6, stride=1, padding=1)
         self.pool = nn.MaxPool2d(kernel_size=1, stride=1, padding=0)
         self.fc = nn.Linear(9, 2)
-        self.fc2 = nn.Linear(2, 1) 
+        self.fc2 = nn.Linear(2, 1)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -186,10 +186,10 @@ def test_fx_fold_modules():
     graph_transformer.transform(resnet)
     graph = graph_transformer.get_graph()
     assert len(graph.nodes) == 13
-    plot_graph(graph, "Transformation")
+    plot_graph(graph, "Transformation resnet")
 
 
-def test_fx_unfold_modules():
+def test_fx_unfold_modules():  # Was ist hier der sinn?
     net = SimpleCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
     graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
@@ -197,7 +197,7 @@ def test_fx_unfold_modules():
     ))
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
-    plot_graph(graph, "Transformation")
+    plot_graph(graph, "Transformation simplenet")
 
 
 def test_build_model_from_graph():
@@ -215,20 +215,40 @@ def test_fx_resnet18():
     print(" ")
     resnet = torchvision.models.resnet18(True)
     input_tensor = torch.rand(1, 3, 224, 224)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal())
+    graph_transformer = GraphTransform(input_tensor,
+                                       traversal_strategy=FXTraversal(),
+                                       node_map_strategy=LowLevelNodeMap(0.00000000001))
     graph_transformer.transform(resnet)
     graph = graph_transformer.get_graph()
-    plot_graph(graph, "Transformation")
+    plot_graph(graph, "Transformation resnet")
 
 
 def test_fx_low_level_linear():
     print(" ")
     net = SmallCNN()
+    print(net.fc.weight)
     input_tensor = torch.randn(1, 1, 6, 6)
     graph_transformer = GraphTransform(input_tensor,
                                        traversal_strategy=FXTraversal(),
-                                       node_map_strategy=LowLevelNodeMap()
+                                       node_map_strategy=LowLevelNodeMap(0.15)
                                        )
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
-    plot_graph(graph, "Transformation")
+    plot_graph(graph, "Transformation smallnet")
+
+
+def test_fx_alexnet():
+    print(" ")
+    alexnet = torchvision.models.alexnet(True)
+    input_tensor = torch.rand(1, 3, 224, 224)
+    for child in alexnet.children():
+        print(child, type(child))
+    graph_transformer = GraphTransform(input_tensor,
+                                       traversal_strategy=FXTraversal(
+                                           unfold_modules=[object]),
+                                       # putting object in unfold modules leads to exclusively function calls, this makes the low level map below useless
+                                       node_map_strategy=LowLevelNodeMap()
+                                       )
+    graph_transformer.transform(alexnet)
+    graph = graph_transformer.get_graph()
+    plot_graph(graph, "Transformation alexnet")
