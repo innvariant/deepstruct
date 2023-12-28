@@ -112,6 +112,11 @@ class FXTraversal(TraversalStrategy):
         traced_modules = dict(traced.named_modules())
         from torch.fx.passes.shape_prop import ShapeProp
         ShapeProp(traced).propagate(input_tensor)
+        #try:
+         #   ShapeProp(traced).propagate(input_tensor)
+        #except:
+          #  print("shape prop did not work")
+
         self.traced_model = traced
         print(" ")
         traced.graph.print_tabular()
@@ -123,7 +128,7 @@ class FXTraversal(TraversalStrategy):
         for node in traced.graph.nodes:
             if self._should_be_included(node):
                 module_instance = traced_modules.get(node.target)
-                shape = node.meta.get('tensor_meta', EmptyShape()).shape
+                shape = getattr(node.meta.get('tensor_meta', EmptyShape()), 'shape', None)
                 self.node_map_strategy.map_node(
                     self.layered_graph,
                     type(module_instance),

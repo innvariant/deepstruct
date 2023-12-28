@@ -28,7 +28,7 @@ class HighLevelNodeMap(CustomNodeMap):
 
 class LowLevelNodeMap(CustomNodeMap):
 
-    def __init__(self, threshold=0.01):
+    def __init__(self, threshold=-1):
         super().__init__({
             torch.nn.Linear: Linear2LayerMapper(threshold),
         }, All2VertexNodeMapper())

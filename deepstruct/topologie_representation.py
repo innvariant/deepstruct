@@ -86,8 +86,18 @@ class LayeredFXGraph(networkx.DiGraph):
 
         super().add_node(next_node_index, name=node_name, **kwargs)
 
+    def _flatten_args(self, nested_list):
+        flat_list = []
+        for element in nested_list:
+            if isinstance(element, (list, tuple)):
+                flat_list.extend(self._flatten_args(element))
+            else:
+                flat_list.append(element)
+        return flat_list
+
     def add_edges(self, source_node_names: List, target_node_name):
         target_indices = self.get_indices_for_name(target_node_name)
+        source_node_names = self._flatten_args(source_node_names)
         for source_node_name in source_node_names:
             s_name = str(source_node_name)
             source_indices = None
@@ -98,7 +108,7 @@ class LayeredFXGraph(networkx.DiGraph):
             else:
                 source_indices = self.get_indices_for_name(s_name)
 
-            if source_indices is None:  # ignore nodes that are not relevant for the graph
+            if source_indices is None:  # ignore nodes that were not added to the graph before e.g. constants
                 continue
 
             for s_i in source_indices:

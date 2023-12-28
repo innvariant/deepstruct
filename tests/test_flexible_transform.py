@@ -1,17 +1,19 @@
 import random
 
 import networkx as nx
-import torch
+
 import torchvision.models
 from matplotlib import pyplot as plt
-from torch import nn
 
-import deepstruct.sparse
 from deepstruct.flexible_transform import GraphTransform
 import torch.nn.functional as F
 
 from deepstruct.node_map_strategies import LowLevelNodeMap
 from deepstruct.traverse_strategies import FXTraversal, FrameworkTraversal
+
+import torch
+import torch.nn as nn
+import torchvision.models as models
 
 
 def plot_graph(graph, title):
@@ -21,6 +23,39 @@ def plot_graph(graph, title):
             ax=ax)
     plt.title(title)
     plt.show()
+
+
+def calculate_network_metrics(G):
+    metrics = {
+        'Anzahl der Knoten': G.number_of_nodes(),
+        'Anzahl der Kanten': G.number_of_edges(),
+        'Durchschnittsgrad': sum(dict(G.degree()).values()) / G.number_of_nodes(),
+        'Dichte': nx.density(G),
+        'Durchschnittlicher Clusterkoeffizient': nx.average_clustering(G)
+    }
+    return metrics
+
+
+class CNNtoRNN(nn.Module):
+    def __init__(self, hidden_size, num_layers, num_classes):
+        super(CNNtoRNN, self).__init__()
+        self.cnn = models.resnet50(pretrained=True)
+        self.cnn = nn.Sequential(*list(self.cnn.children())[:-2])
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.rnn = nn.LSTM(input_size=2048, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)
+
+    def forward(self, x):
+        batch_size, timesteps, C, H, W = x.size()
+
+        # CNN-Feature-Extraktion
+        c_in = x.view(batch_size * timesteps, C, H, W)
+        c_out = self.cnn(c_in)
+        c_out = self.avgpool(c_out)
+        c_out = c_out.view(batch_size, timesteps, -1)
+        r_out, (hn, cn) = self.rnn(c_out)
+        r_out2 = self.fc(r_out[:, -1, :])
+        return r_out2
 
 
 class SimpleCNN(nn.Module):
@@ -87,12 +122,12 @@ class ControlFlowCNN(nn.Module):
         return x
 
 
-def test_framework_transformer():
-    net = SimpleCNN()
-    input_tensor = torch.randn(1, 1, 6, 6)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FrameworkTraversal())
-    graph_transformer.transform(net)
-    plot_graph(graph_transformer.get_graph(), "Transformation")
+#def test_framework_transformer():
+#    net = SimpleCNN()
+#    input_tensor = torch.randn(1, 1, 6, 6)
+#    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FrameworkTraversal())
+#    graph_transformer.transform(net)
+#    plot_graph(graph_transformer.get_graph(), "Transformation")
 
 
 def test_fx_transformer_simple_network():
@@ -200,24 +235,13 @@ def test_fx_unfold_modules():  # Was ist hier der sinn?
     plot_graph(graph, "Transformation simplenet")
 
 
-def test_build_model_from_graph():
-    net = SimpleCNN()
-    input_tensor = torch.randn(1, 1, 6, 6)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal())
-    graph_transformer.transform(net)
-    graph = graph_transformer.get_graph()
-    print(len(graph.nodes))
-    model = deepstruct.sparse.MaskedDeepDAN(6, 2, graph)
-    print(model)
-
-
 def test_fx_resnet18():
     print(" ")
     resnet = torchvision.models.resnet18(True)
     input_tensor = torch.rand(1, 3, 224, 224)
     graph_transformer = GraphTransform(input_tensor,
                                        traversal_strategy=FXTraversal(),
-                                       node_map_strategy=LowLevelNodeMap(0.00000000001))
+                                       node_map_strategy=LowLevelNodeMap())
     graph_transformer.transform(resnet)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation resnet")
@@ -241,14 +265,72 @@ def test_fx_alexnet():
     print(" ")
     alexnet = torchvision.models.alexnet(True)
     input_tensor = torch.rand(1, 3, 224, 224)
-    for child in alexnet.children():
-        print(child, type(child))
     graph_transformer = GraphTransform(input_tensor,
                                        traversal_strategy=FXTraversal(
-                                           unfold_modules=[object]),
-                                       # putting object in unfold modules leads to exclusively function calls, this makes the low level map below useless
-                                       node_map_strategy=LowLevelNodeMap()
+                                           unfold_modules=[object],
+                                           fold_modules=[torch.nn.Conv2d,
+                                                         torch.nn.Linear,
+                                                         torch.nn.BatchNorm2d])
                                        )
     graph_transformer.transform(alexnet)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation alexnet")
+
+
+def test_fx_resnet50():
+    print(" ")
+    res34 = torchvision.models.resnet50(True)
+    input_tensor = torch.rand(1, 3, 224, 224)
+    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(unfold_modules=[object],
+                                                                                    fold_modules=[torch.nn.Conv2d,
+                                                                                                  torch.nn.Linear,
+                                                                                                  torch.nn.BatchNorm2d])
+                                       )
+    graph_transformer.transform(res34)
+    plot_graph(graph_transformer.get_graph(), "Transformation resnet 50")
+
+
+def test_fx_googlenet():
+    print(" ")
+    gnet = torchvision.models.googlenet(True)
+    input_tensor = torch.rand(1, 3, 224, 224)
+    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
+        unfold_modules=[object],
+        fold_modules=[torch.nn.Conv2d,
+                      torch.nn.Linear,
+                      torch.nn.BatchNorm2d,
+                      torch.nn.MaxPool2d,
+                      torch.nn.AdaptiveAvgPool2d]), node_map_strategy=LowLevelNodeMap()
+                                       )
+    graph_transformer.transform(gnet)
+    plot_graph(graph_transformer.get_graph(), "Transformation googlenet")
+
+
+def test_fx_hybridmodel():
+    print(" ")
+    hybridmodel = CNNtoRNN(num_classes=10, hidden_size=256, num_layers=2)
+    input_tensor = torch.rand(4, 10, 3, 224, 224)
+    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(),
+                                       node_map_strategy=LowLevelNodeMap())
+    graph_transformer.transform(hybridmodel)
+    plot_graph(graph_transformer.get_graph(), "Transformation hybridmodel")
+
+
+def test_ged():
+    net1 = SimpleCNN()
+    net2 = SmallCNN()
+    input_tensor = torch.randn(1, 1, 6, 6)
+    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal())
+    graph_transformer2 = GraphTransform(input_tensor, traversal_strategy=FXTraversal())
+    graph_transformer.transform(net1)
+    graph_transformer2.transform(net2)
+    G1 = graph_transformer.get_graph()
+    G2 = graph_transformer2.get_graph()
+
+    metrics_G1 = calculate_network_metrics(G1)
+    metrics_G2 = calculate_network_metrics(G2)
+    ged = nx.graph_edit_distance(G1, G2)
+    print("Kennzahlen von G1:", metrics_G1)
+    print("Kennzahlen von G2:", metrics_G2)
+    print(ged)
+
