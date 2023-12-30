@@ -51,6 +51,15 @@ class LayeredFXGraph(networkx.DiGraph):
     def get_nodes_from_layer(self, layer_index):
         return self._layers.get(layer_index)
 
+    def get_mask_len(self, node_name):
+        nodes = self.get_indices_for_name(node_name)
+        if nodes is None or len(nodes) == 0:
+            return 0
+        mask = self._node_edges_mask.get(nodes[0], None)
+        if mask is None:
+            return 0
+        return len(mask)
+
     def get_layer_index_for_node_name(self, name):
         index = self._name_index_map.get(name)
         for key in self._layers.keys():
@@ -99,26 +108,30 @@ class LayeredFXGraph(networkx.DiGraph):
         target_indices = self.get_indices_for_name(target_node_name)
         source_node_names = self._flatten_args(source_node_names)
         for source_node_name in source_node_names:
-            s_name = str(source_node_name)
-            source_indices = None
-            if s_name in self.ignored_nodes:
-                next_layer = self.get_next_layer_index() - 2 if self.get_next_layer_index() >= 2 else 0
-                if next_layer > 0:
-                    source_indices = self._layers.get(next_layer)
+            source_indices = self._determine_source_indices(source_node_name)
+            if source_indices is not None:  # ignore nodes that were not added to the graph before e.g. constants
+                self._add_edges(source_indices, target_indices)
+
+    def _determine_source_indices(self, source_node_name):
+        s_name = str(source_node_name)
+        if s_name in self.ignored_nodes:
+            next_layer = self.get_next_layer_index() - 2 if self.get_next_layer_index() >= 2 else 0
+            if next_layer > 0:
+                return self._layers.get(next_layer)
             else:
-                source_indices = self.get_indices_for_name(s_name)
+                return None
+        else:
+            return self.get_indices_for_name(s_name)
 
-            if source_indices is None:  # ignore nodes that were not added to the graph before e.g. constants
-                continue
-
-            for s_i in source_indices:
-                source_counter = 0
-                mask = self._node_edges_mask.get(s_i, None)
-                if mask is None:
-                    for t_i in target_indices:
+    def _add_edges(self, source_indices, target_indices):
+        for s_i in source_indices:
+            source_counter = 0
+            mask = self._node_edges_mask.get(s_i, None)
+            if mask is None:
+                for t_i in target_indices:
+                    super().add_edge(s_i, t_i)
+            else:
+                for t_i in target_indices:
+                    if mask[source_counter]:
                         super().add_edge(s_i, t_i)
-                else:
-                    for t_i in target_indices:
-                        if mask[source_counter]:
-                            super().add_edge(s_i, t_i)
-                        source_counter += 1
+                    source_counter += 1

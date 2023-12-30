@@ -80,8 +80,8 @@ class SmallCNN(nn.Module):
         super(SmallCNN, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=6, stride=1, padding=1)
         self.pool = nn.MaxPool2d(kernel_size=1, stride=1, padding=0)
-        self.fc = nn.Linear(9, 2)
-        self.fc2 = nn.Linear(2, 1)
+        self.fc = nn.Linear(9, 6)
+        self.fc2 = nn.Linear(6, 3)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -224,7 +224,7 @@ def test_fx_fold_modules():
     plot_graph(graph, "Transformation resnet")
 
 
-def test_fx_unfold_modules():  # Was ist hier der sinn?
+def test_fx_unfold_modules():
     net = SimpleCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
     graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
@@ -233,6 +233,35 @@ def test_fx_unfold_modules():  # Was ist hier der sinn?
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation simplenet")
+
+
+def test_fx_low_level_linear_fully_connected():
+    print(" ")
+    net = SmallCNN()
+    input_tensor = torch.randn(1, 1, 6, 6)
+    graph_transformer = GraphTransform(input_tensor,
+                                       traversal_strategy=FXTraversal(),
+                                       node_map_strategy=LowLevelNodeMap()
+                                       )
+    graph_transformer.transform(net)
+    graph = graph_transformer.get_graph()
+    fc_nodes = graph.get_indices_for_name('fc')
+    fc2_nodes = graph.get_indices_for_name('fc2')
+    cos_nodes = graph.get_indices_for_name('cos')
+    assert len(fc_nodes) == 9
+    assert len(fc2_nodes) == 6
+    assert len(cos_nodes) == 3
+    for node in fc_nodes:
+        assert graph.in_degree(node) == 1
+        assert graph.out_degree(node) == 6
+    for node in fc2_nodes:
+        assert graph.in_degree(node) == 9
+        assert graph.out_degree(node) == 3
+    for node in cos_nodes:
+        assert graph.in_degree(node) == 6
+        assert graph.out_degree(node) == 1
+
+    plot_graph(graph, "Transformation smallnet")
 
 
 def test_fx_resnet18():
@@ -250,7 +279,6 @@ def test_fx_resnet18():
 def test_fx_low_level_linear():
     print(" ")
     net = SmallCNN()
-    print(net.fc.weight)
     input_tensor = torch.randn(1, 1, 6, 6)
     graph_transformer = GraphTransform(input_tensor,
                                        traversal_strategy=FXTraversal(),
