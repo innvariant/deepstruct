@@ -2,15 +2,15 @@ import networkx
 import torch
 
 from deepstruct.node_map_strategies import CustomNodeMap, HighLevelNodeMap
-from deepstruct.traverse_strategies import TraversalStrategy, FrameworkTraversal
+from deepstruct.traverse_strategies import TraversalStrategy, FXTraversal
 
 
 class GraphTransform:
-    def __init__(self, random_input, traversal_strategy: TraversalStrategy = None,
-                 node_map_strategy: CustomNodeMap = None):
+    def __init__(self, random_input, traversal_strategy: TraversalStrategy = FXTraversal(),
+                 node_map_strategy: CustomNodeMap = HighLevelNodeMap()):
         self.random_input = random_input
-        self.traversal_strategy = traversal_strategy if traversal_strategy else FrameworkTraversal()
-        self.node_map_strategy = node_map_strategy if node_map_strategy else HighLevelNodeMap()
+        self.traversal_strategy = traversal_strategy
+        self.node_map_strategy = node_map_strategy
 
     def transform(self, model: torch.nn.Module):
         try:

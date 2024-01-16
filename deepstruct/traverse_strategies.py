@@ -1,23 +1,16 @@
 import math
 import operator
-import random
-import types
 from abc import abstractmethod, ABC
-from functools import wraps
-from inspect import isfunction
 from types import ModuleType
 from typing import Tuple, Dict, Optional, Any, Union, Callable
 
-import networkx
 import numpy as np
 import numpy.random
-from torch.fx import Node
-from torch.fx.node import Target, Argument, Node
+from torch.fx.node import Node
 
-from deepstruct.graph import LabeledDAG
+
 from deepstruct.node_map_strategies import CustomNodeMap
-from deepstruct.topologie_representation import LayeredGraph, LayeredFXGraph
-from deepstruct.constants import DEFAULT_OPERATIONS
+from deepstruct.topologie_representation import LayeredFXGraph
 
 import torch
 import torch.fx
@@ -112,14 +105,9 @@ class FXTraversal(TraversalStrategy):
         traced_modules = dict(traced.named_modules())
         from torch.fx.passes.shape_prop import ShapeProp
         ShapeProp(traced).propagate(input_tensor)
-        #try:
-         #   ShapeProp(traced).propagate(input_tensor)
-        #except:
-          #  print("shape prop did not work")
-
         self.traced_model = traced
-        print(" ")
-        traced.graph.print_tabular()
+        print(" ")  # testing purpose delete later
+        traced.graph.print_tabular()  # testing purpose delete later
 
         class EmptyShape:
             def __init__(self):
@@ -137,7 +125,6 @@ class FXTraversal(TraversalStrategy):
                     shape=shape,
                     origin_module=node.orig_mod
                 )
-                self.layered_graph.current_layer += 1
             else:
                 self.layered_graph.ignored_nodes.append(node.name)
 
@@ -169,7 +156,11 @@ class FXTraversal(TraversalStrategy):
         if node.op == 'call_module':
             return any(isinstance(node.orig_mod, m) for m in exclude_modules)
         else:
-            return any(node.orig_mod == f or node.orig_mod == getattr(f, '__name__', None) for f in exclude_fn)
+            node_name = getattr(node.orig_mod, '__name__', "name not found in orig")
+            if node_name is "name not found in orig":
+                node_name = str(node.orig_mod)
+            return any(node.orig_mod == f or node_name
+                       == getattr(f, '__name__', "name not found in fn") for f in exclude_fn)
 
     def restore_traversal(self):
         pass
@@ -177,89 +168,3 @@ class FXTraversal(TraversalStrategy):
     def get_graph(self):
         return self.layered_graph
 
-
-class FrameworkTraversal(TraversalStrategy):
-
-    def __init__(self, namespaces_with_functions=DEFAULT_OPERATIONS):
-        self.functions_to_decorate = []
-        self.layered_graph = LabeledDAG()
-        self.orig_func_defs = []
-        self.node_map_strategy: CustomNodeMap = None
-        self.namespaces_with_functions = namespaces_with_functions
-
-    def init(self, node_map_strategy: CustomNodeMap):
-        self.node_map_strategy = node_map_strategy
-
-    def traverse(self,
-                 input_tensor: torch.Tensor,
-                 model: torch.nn.Module, ):
-        self._prepare_for_traversal()
-        model.forward(input_tensor)
-
-    def restore_traversal(self):
-        for func_def in self.orig_func_defs:
-            setattr(func_def[0], func_def[1], func_def[2])
-
-    def get_graph(self):
-        return self.layered_graph
-
-    def _prepare_for_traversal(self):
-        for namespace, func_name in self.namespaces_with_functions:
-            if not hasattr(namespace, func_name):
-                print("Function: ", func_name, " not found in namespace: ", namespace)
-            else:
-                self.functions_to_decorate.append((namespace, func_name, getattr(namespace, func_name)))
-                self.orig_func_defs.append((namespace, func_name, getattr(namespace, func_name)))
-
-        for fn in self.functions_to_decorate:
-            decorated_fn = self._decorate_functions(fn[2], fn[0], fn[1])
-            setattr(fn[0], fn[1], decorated_fn)
-
-    def _decorate_functions(self, func, func_namespace, func_name):
-        # Problem: what if there is recurrence?
-        @wraps(func)
-        def decorator_func(*args, **kwargs):
-            all_args = list(args) + list(kwargs.values())
-            executed = False
-            out = None
-            for arg in all_args:
-                if issubclass(type(arg), torch.Tensor):
-                    input_shape = arg.shape
-                    out = func(*args, **kwargs)
-                    fn_name = func_namespace.__name__ + " " + func_name
-                    shape = getattr(out, 'shape', None)
-                    self.node_map_strategy.map_node(func_namespace, self.layered_graph, shape,
-                                                    fn_name, input_shape)
-                    executed = True
-                    break  # what if there is another tensor e.g. add(t1, t2)
-                    # Maybe show both?
-            if not executed:
-                print("No Tensor arguments where found in function: ", func_name, " namespace: ", func_namespace)
-                out = func(*args, **kwargs)
-
-            return out
-
-        return decorator_func
-
-
-class TorchLensTraversal(TraversalStrategy):
-
-    def __init__(self, namespaces_with_functions=DEFAULT_OPERATIONS):
-        self.functions_to_decorate = []
-        self.layered_graph = LayeredGraph()
-        self.orig_func_defs = []
-        self.node_map_strategy: CustomNodeMap = None
-        self.namespaces_with_functions = namespaces_with_functions
-
-    def init(self, node_map_strategy: CustomNodeMap):
-        self.node_map_strategy = node_map_strategy
-
-    def traverse(self, input_tensor: torch.Tensor, model: torch.nn.Module):
-        import torchlens as tl
-        model_history = tl.log_forward_pass(model, input_tensor, layers_to_save='all', vis_opt='unrolled')
-
-    def restore_traversal(self):
-        pass
-
-    def get_graph(self):
-        pass
