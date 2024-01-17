@@ -11,6 +11,7 @@ class LayeredFXGraph(networkx.DiGraph):
         super(LayeredFXGraph, self).__init__(**attr)
         self._node_name_data = {}  # information for a name -> [layer_number, [indices], output_layer_size]
         self._mask_for_name = {}
+        self.edges_for_name = {}
         self.ignored_nodes = []
 
     def get_next_layer_index(self):
@@ -40,6 +41,7 @@ class LayeredFXGraph(networkx.DiGraph):
         node_data.append(node_indices)
         node_data.append(output_layer_size)
         self._node_name_data[name] = node_data
+        return node_indices
 
     def _add_vertex(self, node_name, **kwargs):
         next_node_index = len(self.nodes)
@@ -51,9 +53,10 @@ class LayeredFXGraph(networkx.DiGraph):
         source_node_names = self._flatten_args(source_node_names)
         for source_node_name in source_node_names:
             s_n = str(source_node_name)
+            edges = self.edges_for_name.pop(s_n, None)
             source_indices = self._determine_source_indices(s_n)
             if source_indices is not None:  # ignore nodes that were not added to the graph before e.g. constants
-                self._add_edges(source_indices, target_indices, self._mask_for_name.pop(s_n, None))
+                self._add_edges(source_indices, target_indices, self._mask_for_name.pop(s_n, None), edges)
 
     def _flatten_args(self, nested_list):
         flat_list = []
@@ -74,21 +77,14 @@ class LayeredFXGraph(networkx.DiGraph):
             name_data = self._node_name_data.get(source_node_name)
             return None if name_data is None else name_data[1]
 
-    def _add_edges(self, source_indices, target_indices, mask):
-        if mask is None:
+    def _add_edges(self, source_indices, target_indices, mask, edges):
+        if edges is not None:
+            super().add_edges_from(edges)
+        elif mask is None:
             for s_i in source_indices:
                 for t_i in target_indices:
                     super().add_edge(s_i, t_i)
         else:
-            # source_counter = 0
-            # for s_i in source_indices:
-            #     mask_slice = mask[source_counter]
-            #     source_counter += 1
-            #     target_counter = 0
-            #     for t_i in target_indices:
-            #         if mask_slice.numel() > 0 and mask_slice[target_counter]:
-            #             super().add_edge(s_i, t_i)
-            #         target_counter += 1
             target_counter = 0
             for t_i in target_indices:
                 mask_slice = mask[target_counter]
