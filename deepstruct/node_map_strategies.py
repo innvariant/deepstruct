@@ -3,6 +3,8 @@ from abc import abstractmethod
 import numpy as np
 import torch.nn
 
+from deepstruct.topologie_representation import LayeredFXGraph
+
 
 class NodeMapper:
 
@@ -39,16 +41,15 @@ class LowLevelNodeMap(CustomNodeMap):
 
 class All2VertexNodeMapper(NodeMapper):
 
-    def add_node(self, graph, predecessors, **kwargs):
+    def add_node(self, graph: LayeredFXGraph, predecessors, **kwargs):
         node_name = kwargs.pop('name')
-        mask_len = 0
+        output_layer_len = 0
         for pred in predecessors:
-            mask_len += graph.get_mask_len(str(pred))
-        if mask_len == 0:
-            graph.add_vertex(node_name, **kwargs)
+            output_layer_len += graph.get_output_layer_len(str(pred))
+        if output_layer_len == 0:
+            graph.add_vertices(1, node_name, **kwargs)
         else:
-            for _ in range(mask_len):
-                graph.add_vertex(node_name, **kwargs)
+            graph.add_vertices(output_layer_len, node_name, **kwargs)
         graph.add_edges(predecessors, node_name)
 
 
@@ -57,16 +58,15 @@ class Linear2LayerMapper(NodeMapper):
     def __init__(self, threshold):
         self.threshold = threshold
 
-    def add_node(self, graph, predecessors, **kwargs):
+    def add_node(self, graph: LayeredFXGraph, predecessors, **kwargs):
         model = kwargs.get("origin_module")
         in_features = model.in_features
         out_features = model.out_features
         mask = torch.ones((out_features, in_features), dtype=torch.bool)
         mask[torch.where(abs(model.weight) < self.threshold)] = False  # L1-Pruning
+        kwargs['mask'] = mask
         node_name = kwargs.pop('name')
-        for i in range(in_features):
-            kwargs['mask'] = mask[:, i]
-            graph.add_vertex(node_name, **kwargs)
+        graph.add_vertices(in_features, node_name, output_layer_size=out_features, **kwargs)
         graph.add_edges(predecessors, node_name)
 
 
@@ -75,7 +75,7 @@ class Conv2LayerMapper(NodeMapper):
     def __init__(self, threshold):
         self.threshold = threshold
 
-    def add_node(self, graph, predecessors, **kwargs):
+    def add_node(self, graph: LayeredFXGraph, predecessors, **kwargs):
         model = kwargs.get('origin_module')
         shape = kwargs.get('shape')
         node_name = kwargs.pop('name')
@@ -96,13 +96,9 @@ class Conv2LayerMapper(NodeMapper):
         input_width = input_shape(output_width, 1)
         input_neurons_count = channels_in * input_width * input_height
         output_neurons_count = channels_out * output_height * output_width
-        mask = torch.ones((output_neurons_count, input_neurons_count), dtype=torch.bool)
-        mask[:, :] = False
-
-        for i in range(input_neurons_count):
-            kwargs['mask'] = mask[:, i]
-            graph.add_vertex(node_name, **kwargs)
-        graph.add_edges(predecessors, node_name)
+        # mask = torch.ones((output_neurons_count, input_neurons_count), dtype=torch.bool)
+        # mask[:, :] = False
+        mask = torch.zeros((output_neurons_count, input_neurons_count), dtype=torch.bool)
 
         def get_input_neuron(channel: int, row: int, col: int):
             return int((col * input_height + row) + (channel * input_width * input_height))
@@ -127,3 +123,8 @@ class Conv2LayerMapper(NodeMapper):
                         out_row += 1
                     offset_height += stride[0]
                     out_col += 1
+
+        kwargs['mask'] = mask
+        graph.add_vertices(input_neurons_count, node_name, output_layer_size=output_neurons_count, **kwargs)
+        graph.add_edges(predecessors, node_name)
+

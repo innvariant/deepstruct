@@ -8,7 +8,6 @@ import numpy as np
 import numpy.random
 from torch.fx.node import Node
 
-
 from deepstruct.node_map_strategies import CustomNodeMap
 from deepstruct.topologie_representation import LayeredFXGraph
 
@@ -108,12 +107,17 @@ class FXTraversal(TraversalStrategy):
         self.traced_model = traced
         print(" ")  # testing purpose delete later
         traced.graph.print_tabular()  # testing purpose delete later
+        self._add_nodes_to_graph(traced, traced_modules)
+
+    def _add_nodes_to_graph(self, traced, traced_modules):
 
         class EmptyShape:
             def __init__(self):
                 self.shape = None
 
         for node in traced.graph.nodes:
+            if node.op == 'get_attr':
+                continue
             if self._should_be_included(node):
                 module_instance = traced_modules.get(node.target)
                 shape = getattr(node.meta.get('tensor_meta', EmptyShape()), 'shape', None)
@@ -131,8 +135,6 @@ class FXTraversal(TraversalStrategy):
     def _should_be_included(self, node):
         if node.op == 'placeholder' or node.op == 'output':
             return True
-        elif node.op == 'get_attr':
-            return False
         else:
             return self._is_in_include(node) and not self._is_in_exclude(node)
 
@@ -167,4 +169,3 @@ class FXTraversal(TraversalStrategy):
 
     def get_graph(self):
         return self.layered_graph
-
