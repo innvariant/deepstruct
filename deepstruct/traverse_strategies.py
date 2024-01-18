@@ -13,6 +13,7 @@ from deepstruct.topologie_representation import LayeredFXGraph
 
 import torch
 import torch.fx
+from tqdm import tqdm
 
 
 class TraversalStrategy(ABC):
@@ -105,8 +106,7 @@ class FXTraversal(TraversalStrategy):
         from torch.fx.passes.shape_prop import ShapeProp
         ShapeProp(traced).propagate(input_tensor)
         self.traced_model = traced
-        print(" ")  # testing purpose delete later
-        traced.graph.print_tabular()  # testing purpose delete later
+        traced.graph.print_tabular()
         self._add_nodes_to_graph(traced, traced_modules)
 
     def _add_nodes_to_graph(self, traced, traced_modules):
@@ -115,7 +115,7 @@ class FXTraversal(TraversalStrategy):
             def __init__(self):
                 self.shape = None
 
-        for node in traced.graph.nodes:
+        for node in tqdm(traced.graph.nodes, desc="Tracing Nodes"):
             if node.op == 'get_attr':
                 continue
             if self._should_be_included(node):
