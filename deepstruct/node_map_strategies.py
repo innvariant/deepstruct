@@ -1,6 +1,5 @@
 from abc import abstractmethod
 
-import numpy as np
 import torch.nn
 
 from deepstruct.topologie_representation import LayeredFXGraph

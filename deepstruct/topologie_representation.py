@@ -1,8 +1,6 @@
-import itertools
 from typing import List
 
 import networkx
-import numpy as np
 
 
 class LayeredFXGraph(networkx.DiGraph):
@@ -18,14 +16,16 @@ class LayeredFXGraph(networkx.DiGraph):
         return len(self._node_name_data)
 
     def get_output_layer_len(self, node_name):
-        data = self._node_name_data.get(node_name)
-        if data is None:
-            return 0
-        else:
-            return data[2]
+        data = self._node_name_data.get(node_name, None)
+        return data[2] if data is not None else 0
 
-    def get_indices_for_name(self, name):
-        return self._node_name_data.get(name)[1]
+    def get_layer_number(self, node_name):
+        data = self._node_name_data.get(node_name, None)
+        return data[0] if data is not None else None
+
+    def get_indices_for_name(self, node_name):
+        data = self._node_name_data.get(node_name, None)
+        return data[1] if data is not None else None
 
     def add_vertices(self, count: int, name, output_layer_size=0, layer=None, **kwargs):
         node_data = []
@@ -74,8 +74,7 @@ class LayeredFXGraph(networkx.DiGraph):
             penultimate = values[-2]
             return penultimate[1]  # the layer that was added before the current node
         else:
-            name_data = self._node_name_data.get(source_node_name)
-            return None if name_data is None else name_data[1]
+            return self.get_indices_for_name(source_node_name)
 
     def _add_edges(self, source_indices, target_indices, mask, edges):
         if edges is not None:

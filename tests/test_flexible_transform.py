@@ -1,7 +1,6 @@
 import random
 
 import networkx as nx
-import numpy as np
 import pandas as pd
 
 import torchvision.models
@@ -10,14 +9,11 @@ from matplotlib import pyplot as plt
 from deepstruct.flexible_transform import GraphTransform
 import torch.nn.functional as F
 
-from deepstruct.node_map_strategies import LowLevelNodeMap
-from deepstruct.transform import Conv2dLayerFunctor
 from deepstruct.traverse_strategies import FXTraversal
 
 import torch
 import torch.nn as nn
 import torchvision.models as models
-from networkx.algorithms import isomorphism
 
 
 def plot_graph(graph, title):
