@@ -280,7 +280,7 @@ class LabeledDAG(LayeredGraph):
         """match = np.where(self.get_vertices(self.get_layer(vertex)) == vertex)
         return match[0][0] if len(match) > 0 else None"""
 
-    def add_vertex(self, layer: int = 0):
+    def add_vertex(self, layer: int = 0, **kwargs):
         assert layer >= 0
 
         new_node = len(self.nodes)
@@ -288,7 +288,7 @@ class LabeledDAG(LayeredGraph):
             self._vertex_by_layer[layer] = []
         self._vertex_by_layer[layer].append(new_node)
         self._layer_index[new_node] = layer
-        super().add_node(new_node)
+        super().add_node(new_node, **kwargs)
         return new_node
 
     def add_vertices(self, num_vertices: int, layer: int = 0):
