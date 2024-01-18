@@ -1,6 +1,5 @@
 import networkx as nx
 import numpy as np
-import pandas as pd
 
 from matplotlib import pyplot as plt
 
@@ -22,15 +21,6 @@ def plot_graph(graph, title):
             ax=ax)
     plt.title(title)
     plt.show()
-
-
-def print_adjacent_matrix(graph):
-    pd.set_option('display.max_rows', None)
-    pd.set_option('display.max_columns', None)
-    node_labels = [graph.nodes[n]['name'] for n in graph.nodes()]
-    adj_matrix = nx.adjacency_matrix(graph)
-    adj_df = pd.DataFrame(adj_matrix.todense(), index=node_labels, columns=node_labels)
-    print(adj_df)
 
 
 def calculate_network_metrics(graph):
@@ -121,7 +111,6 @@ def test_fx_low_level_linear_fully_connected():
         assert graph.out_degree(node) == 1
 
     plot_graph(graph, "Transformation smallnet")
-    print_adjacent_matrix(graph)
 
 
 def test_fx_low_level_linear():
