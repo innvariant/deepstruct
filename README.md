@@ -221,6 +221,7 @@ for feat, target in train_loader:
 
 
 # References
+Have a look into our positioning paper on [arxiv](https://arxiv.org/abs/2111.06679) and related articles.
 We're glad if you cite our work
 ```bibtex
 @article{stier2022deepstruct,
@@ -230,5 +231,20 @@ We're glad if you cite our work
   volume={11},
   year={2022},
   publisher={Elsevier}
+}
+@article{stier2019structural,
+  title={Structural analysis of sparse neural networks},
+  author={Stier, Julian and Granitzer, Michael},
+  journal={Procedia Computer Science},
+  volume={159},
+  pages={107--116},
+  year={2019},
+  publisher={Elsevier}
+}
+@phdthesis{stier2024structures,
+  author  = "Julian Stier",
+  title   = "Structures of Artificial Neural Networks - Empirical Investigations",
+  school  = "University of Passau",
+  year    = "2024"
 }
 ```
