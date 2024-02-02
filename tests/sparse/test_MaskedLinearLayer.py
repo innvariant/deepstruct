@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-import deepstruct.pruning
+import deepstruct.pruning.util as dprutil
 import deepstruct.sparse
 import deepstruct.util
 
@@ -35,7 +35,7 @@ def test_parameter_reset_success():
     input_size = 5
     output_size = 7
     layer = deepstruct.sparse.MaskedLinearLayer(input_size, output_size)
-    layer.apply(deepstruct.pruning.set_random_masks)
+    layer.apply(dprutil.set_random_masks)
     initial_state = np.copy(layer.mask)
 
     # Act - Now the mask should be reset to only ones
@@ -52,10 +52,10 @@ def test_mask_changes_output_success():
     layer = deepstruct.sparse.MaskedLinearLayer(input_size, output_size)
     input = torch.rand(input_size)
 
-    layer.apply(deepstruct.pruning.set_random_masks)
+    layer.apply(dprutil.set_random_masks)
     first_mask = np.copy(layer.mask)
     first_mask_output = layer(input).detach().numpy()
-    layer.apply(deepstruct.pruning.set_random_masks)
+    layer.apply(dprutil.set_random_masks)
     second_mask = np.copy(layer.mask)
     second_mask_output = layer(input).detach().numpy()
 
@@ -86,7 +86,7 @@ def test_initialize_random_parameterizable_mask_success():
     initial_state = np.copy(layer.mask)
 
     # Act
-    layer.apply(deepstruct.pruning.set_random_masks)
+    layer.apply(dprutil.set_random_masks)
 
     # Assert
     assert (np.array(layer.mask) != initial_state).any()
@@ -130,8 +130,6 @@ def test_paramterized_masks_success():
     layer = deepstruct.sparse.MaskedLinearLayer(
         input_size, output_size, mask_as_params=True
     )
-    # layer.apply(deepstruct.pruning.set_random_masks)
-    # print(layer.mask)
     initial_alpha_mask = layer._mask.clone().detach().cpu().numpy()
     optimizer = torch.optim.Adam(layer.parameters(), lr=0.1, weight_decay=0.1)
 
