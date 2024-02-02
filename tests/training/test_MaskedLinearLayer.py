@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 
-import deepstruct.pruning
+import deepstruct.pruning.util as dprutil
 import deepstruct.sparse
 
 
@@ -19,7 +19,7 @@ def test_learn():
     layer_out = deepstruct.sparse.MaskedLinearLayer(
         hidden_size, output_size, mask_as_params=False
     )
-    layer_one.apply(deepstruct.pruning.set_random_masks)
+    layer_one.apply(dprutil.set_random_masks)
     # layer_h2h.mask = torch.ones((hidden_size, hidden_size))
     for n_source in range(hidden_size):
         for n_target in range(hidden_size):
@@ -29,7 +29,7 @@ def test_learn():
     print(layer_h2h.weight)
     print(layer_h2h.mask)
 
-    layer_out.apply(deepstruct.pruning.set_random_masks)
+    layer_out.apply(dprutil.set_random_masks)
 
     samples_per_class = 5000
     ys = torch.cat([torch.ones(samples_per_class), torch.zeros(samples_per_class)])
