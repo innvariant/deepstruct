@@ -175,17 +175,19 @@ Thus there are various ways for implementing Sparse Neural Networks.
 We provide some simple utilities for artificial function approximation.
 Like polynomials, neural networks are universal function approximators on bounded intervals of compact spaces.
 To test, you can easily define a function of any finite dimension, e.g. $f: \mathbb{R}^2\rightarrow\mathbb{R}, (x,y)\mapsto 20 + x - 1.8*(y-5) + 3 * np.sin(x + 2 * y) * y + (x / 4) ** 4 + (y / 4) ** 4$:
+
 ```python
 import numpy as np
 import torch.utils.data
-from deepstruct.dataset import FuncDataset
+from dataset import FuncDataset
 from deepstruct.sparse import MaskedDeepFFN
 
 # Our artificial landscape: f: R^2 -> R
 # Have a look at https://github.com/innvariant/eddy for some visual examples
 # You could easily define arbitrary functions from R^a to R^b
-stier2020B1d = lambda x, y: 20 + x - 1.8*(y-5) + 3 * np.sin(x + 2 * y) * y + (x / 4) ** 4 + (y / 4) ** 4
-ds_input_shape = (2,)  # specify the number of input dimensions (usually a one-sized tensor if no further structures are used)
+stier2020B1d = lambda x, y: 20 + x - 1.8 * (y - 5) + 3 * np.sin(x + 2 * y) * y + (x / 4) ** 4 + (y / 4) ** 4
+ds_input_shape = (
+    2,)  # specify the number of input dimensions (usually a one-sized tensor if no further structures are used)
 # Explicitly define the target function for the dataset which returns a numpy array of our above function
 # By above definition x is two-dimensional, so you have access to x[0] and x[1]
 fn_target = lambda x: np.array([stier2020B1d(x[0], x[1])])

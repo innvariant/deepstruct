@@ -1,5 +1,6 @@
 import pickle
 
+import deprecated
 import numpy as np
 import torch
 
@@ -7,7 +8,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 
-class FuncDataset(Dataset):
+class FunctionalDataset(Dataset):
     def __init__(self, fn, size: int, shape_input: tuple = None, sampler=None):
         assert fn is not None
         assert callable(fn)
@@ -85,6 +86,11 @@ class FuncDataset(Dataset):
             raise StopIteration("Given index <%s> exceeds dataset." % idx)
 
         return self._data[idx]
+
+
+@deprecated.deprecated(reason="FuncDataset gets a more explicit name", version="0.11.0")
+def FuncDataset(*args, **kwargs):
+    return FunctionalDataset(*args, **kwargs)
 
 
 if __name__ == "__main__":
