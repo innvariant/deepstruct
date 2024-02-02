@@ -1,27 +1,15 @@
 # deepstruct - neural network structure tool [![PyPI version](https://badge.fury.io/py/deepstruct.svg)](https://badge.fury.io/py/deepstruct) ![Tests](https://github.com/innvariant/deepstruct/workflows/Tests/badge.svg) [![Documentation Status](https://readthedocs.org/projects/deepstruct/badge/?version=latest)](https://deepstruct.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://pepy.tech/badge/deepstruct)](https://pepy.tech/project/deepstruct)  [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 Create deep neural networks based on very different kinds of graphs or use *deepstruct* to extract the structure of your deep neural network.
+Deepstruct can automatically create a deep neural network models based on graphs and for purposes of visualization, analysis or transformations it also supports graph extraction from a given model.
 
-Deepstruct combines tools for fusing machine learning and graph theory.
-We are fascinated with the interplay of end-to-end learnable, locally restricted models and their graph theoretical properties.
-Searching for evidence of the structural prior hypothesis.
-Interested in pruning, neural architecture search or learning theory in general?
+Interested in neural network visualizations, pruning, neural architecture search or neural structure in general?
 
 See [examples](#examples) below or [read the docs](https://deepstruct.readthedocs.io).
 
-We're glad if you reference our work
-```bibtex
-@article{stier2022deepstruct,
-  title={deepstruct -- linking deep learning and graph theory},
-  author={Stier, Julian and Granitzer, Michael},
-  journal={Software Impacts},
-  volume={11},
-  year={2022},
-  publisher={Elsevier}
-}
-```
 
 ## Installation
 - With **pip** from PyPi: ``pip install deepstruct``
+- With **poetry** (recommended for *projects*) using PyPi: ``poetry add deepstruct``
 - With **conda** in your *environment.yml* (recommended for reproducible experiments):
 ```yaml
 name: exp01
@@ -32,10 +20,19 @@ dependencies:
 - pip:
     - deepstruct
 ```
-- With **poetry** (recommended for *projects*) using PyPi: ``poetry add deepstruct``
 - From public GitHub: ``pip install --upgrade git+ssh://git@github.com:innvariant/deepstruct.git``
 
-## Quick usage: multi-layered feed-forward neural network on MNIST
+
+## Quick usages
+*deepstruct* provides two major tool approaches to pytorch models:
+
+1. Based on a graph structure, it allows you to automatically **construct** a deep neural network model.
+2. Given a (pre-trained) model, *deepstruct* provides options to **extract** different notions of a graph from it as to further visualize or analyze it.
+
+
+### Constructing Models
+
+#### Multi-layered feed-forward neural network on MNIST
 The simplest implementation is one which provides multiple layers with binary masks for each weight matrix.
 It doesn't consider any skip-layer connections.
 Each layer is then connected to only the following one.
@@ -56,7 +53,7 @@ for layer in deepstruct.sparse.maskable_layers(mnist_model):
 and if you disable some of these mask elements you have defined your first sparse model.
 
 
-## Examples
+#### Random Graphs as Structural Priors
 Specify structures by prior design, e.g. random social networks transformed into directed acyclic graphs:
 ```python
 import networkx as nx
@@ -77,17 +74,8 @@ pruned_structure = model.generate_structure()  # Get the structure -- a networkx
 new_model = deepstruct.sparse.MaskedDeepDAN(784, 10, pruned_structure)
 ```
 
-Define a feed-forward neural network (with no skip-layer connections) and obtain its structure as a graph:
-```python
-import deepstruct.sparse
 
-model = deepstruct.sparse.MaskedDeepFFN(784, 10, [100, 100])
-# .. train model
-model.generate_structure()  # a networkx graph
-```
-
-
-### Recurrent Neural Networks with sparsity
+#### Recurrent Neural Networks with sparsity
 ```python
 import torch
 import deepstruct.recurrent
@@ -111,6 +99,26 @@ random_input = torch.tensor(
 )
 model.forward(random_input)
 ```
+
+
+
+### Graph Extraction
+Define a feed-forward neural network (with no skip-layer connections) and obtain its structure as a graph:
+```python
+import torch
+import deepstruct.sparse
+from deepstruct.transform import GraphTransform
+
+model = deepstruct.sparse.MaskedDeepFFN(784, 10, [100, 100])
+# .. train the model or load a pre-trained
+
+# Define a random input tensor which is required to analyse the structure
+input_random = torch.randn((1, 20))
+functor = GraphTransform(input_random)
+result = functor.transform(model)
+```
+
+
 
 
 
@@ -209,4 +217,18 @@ for feat, target in train_loader:
 
     # compute a loss based on the expected target and the models prediction
     # ..
+```
+
+
+# References
+We're glad if you cite our work
+```bibtex
+@article{stier2022deepstruct,
+  title={deepstruct -- linking deep learning and graph theory},
+  author={Stier, Julian and Granitzer, Michael},
+  journal={Software Impacts},
+  volume={11},
+  year={2022},
+  publisher={Elsevier}
+}
 ```

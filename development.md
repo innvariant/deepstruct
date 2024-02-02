@@ -24,6 +24,10 @@
 
 # Practices & Conventions
 
+## Namings
+Consider a reversed naming scheme for variables, i.e. ```parameter_lr``` for a learning rate parameter.
+The advantage of it is to have a naming scheme which allows for fast auto-complete etc.
+
 ## Publishing
 ```bash
 poetry build
