@@ -80,7 +80,7 @@ class DeepCellDAN(nn.Module):
             inputs_raw = []
             max_h = 0
             max_w = 0
-            for (u, v) in self._structure.in_edges(node):
+            for u, v in self._structure.in_edges(node):
                 inputs_raw.append(outputs[u])
                 max_h = max(max_h, outputs[u].shape[2])
                 max_w = max(max_w, outputs[u].shape[3])
@@ -127,9 +127,9 @@ class DeepCellDAN(nn.Module):
                 max_w,
                 device=current_output.device,
             )
-            zero_padded[
-                :, :, : current_output.shape[2], : current_output.shape[3]
-            ] = current_output
+            zero_padded[:, :, : current_output.shape[2], : current_output.shape[3]] = (
+                current_output
+            )
             final_output_stack.append(zero_padded)
         final_output = torch.cat(
             final_output_stack, 1

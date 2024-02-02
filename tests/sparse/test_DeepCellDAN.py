@@ -62,6 +62,7 @@ def test_development():
     """
         Arrange
     """
+
     # Define a customized cell constructor
     # Each cell has to map [batch_size, in_degree, a, b] -> [batch_size, 1, x, y]
     # Except for input cells, they map [batch_size, input_channel_size, a, b] -> [batch_size, 1, x, y]

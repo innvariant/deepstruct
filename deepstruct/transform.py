@@ -16,6 +16,30 @@ def transform_mask_into_graph(graph: LayeredGraph, mask: torch.Tensor):
     assert graph is not None
 
 
+class ModuleVisitor:
+    def __init__(self, graph: LabeledDAG):
+        self._graph = graph
+
+    def applies(self, model: torch.nn.Module):
+        return model is not None
+
+    def visited(self, model):
+        if not hasattr(model, "_deepstruct_visitors"):
+            return False
+        return self in model._deepstruct_visitors
+
+    def mark_visited(self, model):
+        if self.visited(model):
+            return
+
+        if not hasattr(model, "_deepstruct_visitors"):
+            model._deepstruct_visitors = []
+        model._deepstruct_visitors.append(self)
+
+    def visit(self, model):
+        self.mark_visited(model)
+
+
 class ForgetfulFunctor:
     def transform(self, model: torch.nn.Module) -> LabeledDAG:
         raise NotImplementedError("Abstract method needs to be implemented")

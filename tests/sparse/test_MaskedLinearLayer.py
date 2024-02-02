@@ -142,6 +142,6 @@ def test_paramterized_masks_success():
         loss.backward()
         optimizer.step()
 
-    # Assert<
+    # Assert
     assert layer._mask.size() == initial_alpha_mask.shape
     assert (layer._mask.clone().detach().cpu().numpy() != initial_alpha_mask).any()

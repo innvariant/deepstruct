@@ -150,7 +150,7 @@ class ScalableDAN(object):
         )  # ['v%s_%s' % (v, idx) for idx in range(size)])
         nodes_offset += size
 
-        for (source_vertex, _) in self.structure.in_edges(vertex):
+        for source_vertex, _ in self.structure.in_edges(vertex):
             graph_scaled.add_edges_from(
                 itertools.product(
                     vertex_correspondences[source_vertex],

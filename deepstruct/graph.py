@@ -317,7 +317,7 @@ class LabeledDAG(LayeredGraph):
             self.add_vertices(other.get_layer_size(layer), own_layer_target)
             for oth_v_idx, oth_v in enumerate(other.get_vertices(layer)):
                 own_v = self.get_vertices(own_layer_target)[oth_v_idx]
-                for (oth_u, _) in other.in_edges(oth_v):
+                for oth_u, _ in other.in_edges(oth_v):
                     oth_u_idx = other.index_in_layer(oth_u)
                     own_layer_source = offset_layer + other.get_layer(oth_u)
                     own_u = self.get_vertices(own_layer_source)[oth_u_idx]
@@ -371,7 +371,7 @@ class LabeledDAG(LayeredGraph):
         source_map = {}
         target_map = {}
         edges = []
-        for (s, t) in ebunch_to_add:
+        for s, t in ebunch_to_add:
             if s not in source_map:
                 source_map[s] = (
                     s if s in self.nodes else self.add_vertex(new_layer_source)
