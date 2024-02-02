@@ -1,5 +1,5 @@
 # deepstruct - neural network structure tool [![PyPI version](https://badge.fury.io/py/deepstruct.svg)](https://badge.fury.io/py/deepstruct) ![Tests](https://github.com/innvariant/deepstruct/workflows/Tests/badge.svg) [![Documentation Status](https://readthedocs.org/projects/deepstruct/badge/?version=latest)](https://deepstruct.readthedocs.io/en/latest/?badge=latest) [![Downloads](https://pepy.tech/badge/deepstruct)](https://pepy.tech/project/deepstruct)  [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
-![deepstruct neural network structure tool](docs/logo.png)
+![deepstruct neural network structure tool](docs/logo-wide.png)
 
 Create deep neural networks based on very different kinds of graphs or use *deepstruct* to extract the structure of your deep neural network.
 Deepstruct can automatically create a deep neural network models based on graphs and for purposes of visualization, analysis or transformations it also supports graph extraction from a given model.
