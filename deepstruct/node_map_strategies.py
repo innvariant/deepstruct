@@ -2,7 +2,7 @@ from abc import abstractmethod
 
 import torch.nn
 
-from deepstruct.topologie_representation import LayeredFXGraph
+from deepstruct.graph import LayeredFXGraph
 
 
 class NodeMapper:

@@ -9,7 +9,7 @@ import numpy.random
 from torch.fx.node import Node
 
 from deepstruct.node_map_strategies import CustomNodeMap
-from deepstruct.topologie_representation import LayeredFXGraph
+from deepstruct.graph import LayeredFXGraph
 
 import torch
 import torch.fx
