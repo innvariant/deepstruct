@@ -4,7 +4,6 @@
 name = "black"
 version = "22.12.0"
 description = "The uncompromising code formatter."
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -40,7 +39,6 @@ uvloop = ["uvloop (>=0.15.2)"]
 name = "certifi"
 version = "2024.2.2"
 description = "Python package for providing Mozilla's CA Bundle."
-category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -52,7 +50,6 @@ files = [
 name = "cfgv"
 version = "3.4.0"
 description = "Validate configuration and produce human readable error messages."
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -64,7 +61,6 @@ files = [
 name = "charset-normalizer"
 version = "3.3.2"
 description = "The Real First Universal Charset Detector. Open, modern and actively maintained alternative to Chardet."
-category = "dev"
 optional = false
 python-versions = ">=3.7.0"
 files = [
@@ -164,7 +160,6 @@ files = [
 name = "click"
 version = "8.1.7"
 description = "Composable command line interface toolkit"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -179,7 +174,6 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 name = "colorama"
 version = "0.4.6"
 description = "Cross-platform colored terminal text."
-category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*,>=2.7"
 files = [
@@ -191,7 +185,6 @@ files = [
 name = "contourpy"
 version = "1.1.0"
 description = "Python library for calculating contours of 2D quadrilateral grids"
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -326,7 +319,6 @@ test-no-images = ["pytest", "pytest-cov", "wurlitzer"]
 name = "cycler"
 version = "0.12.1"
 description = "Composable style cycles"
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -342,7 +334,6 @@ tests = ["pytest", "pytest-cov", "pytest-xdist"]
 name = "deprecated"
 version = "1.2.14"
 description = "Python @deprecated decorator to deprecate old python classes, functions or methods."
-category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 files = [
@@ -360,7 +351,6 @@ dev = ["PyTest", "PyTest-Cov", "bump2version (<1)", "sphinx (<2)", "tox"]
 name = "distlib"
 version = "0.3.8"
 description = "Distribution utilities"
-category = "dev"
 optional = false
 python-versions = "*"
 files = [
@@ -372,7 +362,6 @@ files = [
 name = "exceptiongroup"
 version = "1.2.0"
 description = "Backport of PEP 654 (exception groups)"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -387,7 +376,6 @@ test = ["pytest (>=6)"]
 name = "filelock"
 version = "3.13.1"
 description = "A platform independent file lock."
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -404,7 +392,6 @@ typing = ["typing-extensions (>=4.8)"]
 name = "fonttools"
 version = "4.47.2"
 description = "Tools to manipulate font files"
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -470,7 +457,6 @@ woff = ["brotli (>=1.0.1)", "brotlicffi (>=0.8.0)", "zopfli (>=0.1.4)"]
 name = "ghp-import"
 version = "2.1.0"
 description = "Copy your docs directly to the gh-pages branch."
-category = "dev"
 optional = false
 python-versions = "*"
 files = [
@@ -488,7 +474,6 @@ dev = ["flake8", "markdown", "twine", "wheel"]
 name = "identify"
 version = "2.5.33"
 description = "File identification library for Python"
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -503,7 +488,6 @@ license = ["ukkonen"]
 name = "idna"
 version = "3.6"
 description = "Internationalized Domain Names in Applications (IDNA)"
-category = "dev"
 optional = false
 python-versions = ">=3.5"
 files = [
@@ -515,7 +499,6 @@ files = [
 name = "importlib-metadata"
 version = "4.13.0"
 description = "Read metadata from Python packages"
-category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -535,7 +518,6 @@ testing = ["flake8 (<5)", "flufl.flake8", "importlib-resources (>=1.3)", "packag
 name = "importlib-resources"
 version = "5.13.0"
 description = "Read resources from Python packages"
-category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -554,7 +536,6 @@ testing = ["pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)",
 name = "iniconfig"
 version = "2.0.0"
 description = "brain-dead simple config-ini parsing"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -566,7 +547,6 @@ files = [
 name = "jinja2"
 version = "3.1.3"
 description = "A very fast and expressive template engine."
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -584,7 +564,6 @@ i18n = ["Babel (>=2.7)"]
 name = "kiwisolver"
 version = "1.4.5"
 description = "A fast implementation of the Cassowary constraint solver"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -717,7 +696,6 @@ testing = ["coverage", "pyyaml"]
 name = "markupsafe"
 version = "2.1.4"
 description = "Safely add untrusted strings to HTML/XML markup."
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -787,7 +765,6 @@ files = [
 name = "matplotlib"
 version = "3.7.4"
 description = "Python plotting package"
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -856,7 +833,6 @@ python-dateutil = ">=2.7"
 name = "mergedeep"
 version = "1.3.4"
 description = "A deep merge function for 🐍."
-category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -868,7 +844,6 @@ files = [
 name = "mkdocs"
 version = "1.5.3"
 description = "Project documentation with Markdown."
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -912,7 +887,6 @@ files = [
 name = "networkx"
 version = "2.8.8"
 description = "Python package for creating and manipulating graphs and networks"
-category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -931,7 +905,6 @@ test = ["codecov (>=2.1)", "pytest (>=7.2)", "pytest-cov (>=4.0)"]
 name = "nodeenv"
 version = "1.8.0"
 description = "Node.js virtual environment builder"
-category = "dev"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*"
 files = [
@@ -946,7 +919,6 @@ setuptools = "*"
 name = "numpy"
 version = "1.24.4"
 description = "Fundamental package for array computing in Python"
-category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -984,7 +956,6 @@ files = [
 name = "nvidia-cublas-cu11"
 version = "11.10.3.66"
 description = "CUBLAS native runtime libraries"
-category = "main"
 optional = false
 python-versions = ">=3"
 files = [
@@ -1000,7 +971,6 @@ wheel = "*"
 name = "nvidia-cuda-nvrtc-cu11"
 version = "11.7.99"
 description = "NVRTC native runtime libraries"
-category = "main"
 optional = false
 python-versions = ">=3"
 files = [
@@ -1017,7 +987,6 @@ wheel = "*"
 name = "nvidia-cuda-runtime-cu11"
 version = "11.7.99"
 description = "CUDA Runtime native Libraries"
-category = "main"
 optional = false
 python-versions = ">=3"
 files = [
@@ -1033,7 +1002,6 @@ wheel = "*"
 name = "nvidia-cudnn-cu11"
 version = "8.5.0.96"
 description = "cuDNN runtime libraries"
-category = "main"
 optional = false
 python-versions = ">=3"
 files = [
@@ -1049,7 +1017,6 @@ wheel = "*"
 name = "packaging"
 version = "23.2"
 description = "Core utilities for Python packages"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1061,7 +1028,6 @@ files = [
 name = "pathspec"
 version = "0.12.1"
 description = "Utility library for gitignore style pattern matching of file paths."
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1073,7 +1039,6 @@ files = [
 name = "pillow"
 version = "10.2.0"
 description = "Python Imaging Library (Fork)"
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1159,7 +1124,6 @@ xmp = ["defusedxml"]
 name = "platformdirs"
 version = "4.2.0"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1175,7 +1139,6 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4.3)", "pytest-
 name = "pluggy"
 version = "1.4.0"
 description = "plugin and hook calling mechanisms for python"
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1191,7 +1154,6 @@ testing = ["pytest", "pytest-benchmark"]
 name = "pre-commit"
 version = "2.21.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1210,7 +1172,6 @@ virtualenv = ">=20.10.0"
 name = "pyfakefs"
 version = "4.7.0"
 description = "pyfakefs implements a fake file system that mocks the Python file system modules."
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1222,7 +1183,6 @@ files = [
 name = "pyparsing"
 version = "3.1.1"
 description = "pyparsing module - Classes and methods to define and execute parsing grammars"
-category = "dev"
 optional = false
 python-versions = ">=3.6.8"
 files = [
@@ -1237,7 +1197,6 @@ diagrams = ["jinja2", "railroad-diagrams"]
 name = "pytest"
 version = "7.4.4"
 description = "pytest: simple powerful testing with Python"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1260,7 +1219,6 @@ testing = ["argcomplete", "attrs (>=19.2.0)", "hypothesis (>=3.56)", "mock", "no
 name = "pytest-mock"
 version = "3.12.0"
 description = "Thin-wrapper around the mock package for easier use with pytest"
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1278,7 +1236,6 @@ dev = ["pre-commit", "pytest-asyncio", "tox"]
 name = "python-dateutil"
 version = "2.8.2"
 description = "Extensions to the standard Python datetime module"
-category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 files = [
@@ -1293,7 +1250,6 @@ six = ">=1.5"
 name = "pyyaml"
 version = "6.0.1"
 description = "YAML parser and emitter for Python"
-category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -1354,7 +1310,6 @@ files = [
 name = "pyyaml-env-tag"
 version = "0.1"
 description = "A custom YAML tag for referencing environment variables in YAML files. "
-category = "dev"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -1369,7 +1324,6 @@ pyyaml = "*"
 name = "requests"
 version = "2.31.0"
 description = "Python HTTP for Humans."
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1391,7 +1345,6 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<6)"]
 name = "semantic-version"
 version = "2.10.0"
 description = "A library implementing the 'SemVer' scheme."
-category = "main"
 optional = false
 python-versions = ">=2.7"
 files = [
@@ -1407,7 +1360,6 @@ doc = ["Sphinx", "sphinx-rtd-theme"]
 name = "setuptools"
 version = "69.0.3"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
-category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1424,7 +1376,6 @@ testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jar
 name = "six"
 version = "1.16.0"
 description = "Python 2 and 3 compatibility utilities"
-category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
 files = [
@@ -1436,7 +1387,6 @@ files = [
 name = "tomli"
 version = "2.0.1"
 description = "A lil' TOML parser"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1448,7 +1398,6 @@ files = [
 name = "torch"
 version = "1.13.1"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
-category = "main"
 optional = false
 python-versions = ">=3.7.0"
 files = [
@@ -1489,7 +1438,6 @@ opt-einsum = ["opt-einsum (>=3.3)"]
 name = "torchvision"
 version = "0.12.0"
 description = "image and video datasets and models for torch deep learning"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1516,13 +1464,33 @@ files = [
 
 [package.dependencies]
 numpy = "*"
-pillow = ">=5.3.0,<8.3.0 || >=8.4.0"
+pillow = ">=5.3.0,<8.3.dev0 || >=8.4.dev0"
 requests = "*"
 torch = "*"
 typing-extensions = "*"
 
 [package.extras]
 scipy = ["scipy"]
+
+[[package]]
+name = "tqdm"
+version = "4.66.1"
+description = "Fast, Extensible Progress Meter"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tqdm-4.66.1-py3-none-any.whl", hash = "sha256:d302b3c5b53d47bce91fea46679d9c3c6508cf6332229aa1e7d8653723793386"},
+    {file = "tqdm-4.66.1.tar.gz", hash = "sha256:d88e651f9db8d8551a62556d3cff9e3034274ca5d66e93197cf2490e2dcb69c7"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+dev = ["pytest (>=6)", "pytest-cov", "pytest-timeout", "pytest-xdist"]
+notebook = ["ipywidgets (>=6)"]
+slack = ["slack-sdk"]
+telegram = ["requests"]
 
 [[package]]
 name = "typing-extensions"
@@ -1540,7 +1508,6 @@ files = [
 name = "urllib3"
 version = "2.2.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
-category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1558,7 +1525,6 @@ zstd = ["zstandard (>=0.18.0)"]
 name = "virtualenv"
 version = "20.25.0"
 description = "Virtual Python Environment builder"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1579,7 +1545,6 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 name = "watchdog"
 version = "3.0.0"
 description = "Filesystem events monitoring"
-category = "dev"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1619,7 +1584,6 @@ watchmedo = ["PyYAML (>=3.10)"]
 name = "wheel"
 version = "0.42.0"
 description = "A built-package format for Python"
-category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
@@ -1634,7 +1598,6 @@ test = ["pytest (>=6.0.0)", "setuptools (>=65)"]
 name = "wrapt"
 version = "1.16.0"
 description = "Module for decorators, wrappers and monkey patching."
-category = "main"
 optional = false
 python-versions = ">=3.6"
 files = [
@@ -1714,7 +1677,6 @@ files = [
 name = "zipp"
 version = "3.17.0"
 description = "Backport of pathlib-compatible object wrapper for zip files"
-category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1729,4 +1691,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "51a4ca6ac10747b09431e3ef60bec2e3bd4b77a1add43ae39c52f283f8934874"
+content-hash = "0d8414265a58a09ffc89bbc24adef2acadd445358ef1057ca5eb1cc5cd709bab"
