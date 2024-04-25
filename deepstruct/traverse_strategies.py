@@ -145,7 +145,6 @@ class FXTraversal(TraversalStrategy):
 
         ShapeProp(traced).propagate(input_tensor)
         self.traced_model = traced
-        traced.graph.print_tabular()
         self._add_nodes_to_graph(traced, traced_modules)
 
     def _add_nodes_to_graph(self, traced, traced_modules):

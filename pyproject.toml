@@ -21,8 +21,8 @@ documentation = "https://deepstruct.readthedocs.io"
 keywords = ["neural network", "sparsity", "machine learning", "structure", "graph", "training"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-torch = "^1.7"
+python = "^3.9,<4.0"
+torch = "^2"
 networkx = "^2.0"
 importlib-metadata = "^4.4"
 importlib-resources = "^5.0"
@@ -41,6 +41,9 @@ pytest-mock = "^3.0"
 pyfakefs = "^4.0.2"
 torchvision = "^0.12"
 mkdocs = "^1.1.2"
+
+[tool.poetry.group.dev.dependencies]
+scipy = "^1.13.0"
 
 [tool.isort]
 profile = "black"
