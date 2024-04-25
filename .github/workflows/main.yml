@@ -22,7 +22,7 @@ jobs:
 
   Tests:
     needs: Linting
-    name: ${{ matrix.os }} / ${{ matrix.python_version }}
+    name: ${{ matrix.os }} (${{ matrix.python_version }})
     runs-on: ${{ matrix.os }}-latest
     strategy:
       matrix:
