@@ -1,13 +1,19 @@
 import networkx
 import torch
 
-from deepstruct.node_map_strategies import CustomNodeMap, HighLevelNodeMap
-from deepstruct.traverse_strategies import TraversalStrategy, FXTraversal
+from deepstruct.node_map_strategies import CustomNodeMap
+from deepstruct.node_map_strategies import HighLevelNodeMap
+from deepstruct.traverse_strategies import FXTraversal
+from deepstruct.traverse_strategies import TraversalStrategy
 
 
 class GraphTransform:
-    def __init__(self, random_input, traversal_strategy: TraversalStrategy = FXTraversal(),
-                 node_map_strategy: CustomNodeMap = HighLevelNodeMap()):
+    def __init__(
+        self,
+        random_input,
+        traversal_strategy: TraversalStrategy = FXTraversal(),
+        node_map_strategy: CustomNodeMap = HighLevelNodeMap(),
+    ):
         self.random_input = random_input
         self.traversal_strategy = traversal_strategy
         self.node_map_strategy = node_map_strategy

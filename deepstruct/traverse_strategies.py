@@ -1,32 +1,36 @@
 import math
 import operator
-from abc import abstractmethod, ABC
+
+from abc import ABC
+from abc import abstractmethod
 from types import ModuleType
-from typing import Tuple, Dict, Optional, Any, Union, Callable
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 import numpy as np
 import numpy.random
-from torch.fx.node import Node
-
-from deepstruct.node_map_strategies import CustomNodeMap
-from deepstruct.graph import LayeredFXGraph
-
 import torch
 import torch.fx
+
+from torch.fx.node import Node
 from tqdm import tqdm
+
+from deepstruct.graph import LayeredFXGraph
+from deepstruct.node_map_strategies import CustomNodeMap
 
 
 class TraversalStrategy(ABC):
 
     @abstractmethod
-    def init(self,
-             node_map_strategy: CustomNodeMap):
+    def init(self, node_map_strategy: CustomNodeMap):
         pass
 
     @abstractmethod
-    def traverse(self,
-                 input_tensor: torch.Tensor,
-                 model: torch.nn.Module):
+    def traverse(self, input_tensor: torch.Tensor, model: torch.nn.Module):
         pass
 
     @abstractmethod
@@ -40,8 +44,16 @@ class TraversalStrategy(ABC):
 
 class FXTraversal(TraversalStrategy):
 
-    def __init__(self, distribution_fn=np.random.normal, include_fn=None, include_modules=None, exclude_fn=None,
-                 exclude_modules=None, fold_modules=None, unfold_modules=None):
+    def __init__(
+        self,
+        distribution_fn=np.random.normal,
+        include_fn=None,
+        include_modules=None,
+        exclude_fn=None,
+        exclude_modules=None,
+        fold_modules=None,
+        unfold_modules=None,
+    ):
         self.traced_model = None
         self.distribution_fn = distribution_fn
         self.include_fn = include_fn
@@ -63,22 +75,41 @@ class FXTraversal(TraversalStrategy):
 
         class CustomTracer(torch.fx.Tracer):
 
-            def __init__(self,
-                         autowrap_modules: Tuple[ModuleType] = (math,),
-                         autowrap_functions: Tuple[Callable, ...] = (),
-                         param_shapes_constant: bool = False, ):
-                super().__init__(autowrap_modules, autowrap_functions, param_shapes_constant)
+            def __init__(
+                self,
+                autowrap_modules: Tuple[ModuleType] = (math,),
+                autowrap_functions: Tuple[Callable, ...] = (),
+                param_shapes_constant: bool = False,
+            ):
+                super().__init__(
+                    autowrap_modules, autowrap_functions, param_shapes_constant
+                )
                 self.orig_mod = None
 
-            def create_proxy(self, kind, target, args, kwargs, name=None, type_expr=None, *_, **__):
-                operators = [operator.gt, operator.ge, operator.lt, operator.le, operator.eq, operator.ne]
+            def create_proxy(
+                self, kind, target, args, kwargs, name=None, type_expr=None, *_, **__
+            ):
+                operators = [
+                    operator.gt,
+                    operator.ge,
+                    operator.lt,
+                    operator.le,
+                    operator.eq,
+                    operator.ne,
+                ]
                 if target and target in operators:
                     return dist_fn(0, 1) > 0.5
                 return super().create_proxy(kind, target, args, kwargs, name, type_expr)
 
-            def create_node(self, kind: str, target: Union[str, Callable],
-                            args: Tuple[Any], kwargs: Dict[str, Any], name: Optional[str] = None,
-                            type_expr: Optional[Any] = None) -> Node | None:
+            def create_node(
+                self,
+                kind: str,
+                target: Union[str, Callable],
+                args: Tuple[Any],
+                kwargs: Dict[str, Any],
+                name: Optional[str] = None,
+                type_expr: Optional[Any] = None,
+            ) -> Node | None:
                 n = super().create_node(kind, target, args, kwargs, name)
                 if self.orig_mod is None:
                     n.orig_mod = target
@@ -87,12 +118,19 @@ class FXTraversal(TraversalStrategy):
                     self.orig_mod = None
                 return n
 
-            def call_module(self, m: torch.nn.Module, forward: Callable[..., Any], args: Tuple[Any, ...],
-                            kwargs: Dict[str, Any]) -> Any:
+            def call_module(
+                self,
+                m: torch.nn.Module,
+                forward: Callable[..., Any],
+                args: Tuple[Any, ...],
+                kwargs: Dict[str, Any],
+            ) -> Any:
                 self.orig_mod = m
                 return super().call_module(m, forward, args, kwargs)
 
-            def is_leaf_module(self, m: torch.nn.Module, module_qualified_name: str) -> bool:
+            def is_leaf_module(
+                self, m: torch.nn.Module, module_qualified_name: str
+            ) -> bool:
                 if any(isinstance(m, fm) for fm in fold):
                     return True
                 elif any(isinstance(m, um) for um in unfold):
@@ -104,6 +142,7 @@ class FXTraversal(TraversalStrategy):
         traced = torch.fx.GraphModule(model, traced_graph)
         traced_modules = dict(traced.named_modules())
         from torch.fx.passes.shape_prop import ShapeProp
+
         ShapeProp(traced).propagate(input_tensor)
         self.traced_model = traced
         traced.graph.print_tabular()
@@ -116,24 +155,26 @@ class FXTraversal(TraversalStrategy):
                 self.shape = None
 
         for node in tqdm(traced.graph.nodes, desc="Tracing Nodes"):
-            if node.op == 'get_attr':
+            if node.op == "get_attr":
                 continue
             if self._should_be_included(node):
                 module_instance = traced_modules.get(node.target)
-                shape = getattr(node.meta.get('tensor_meta', EmptyShape()), 'shape', None)
+                shape = getattr(
+                    node.meta.get("tensor_meta", EmptyShape()), "shape", None
+                )
                 self.node_map_strategy.map_node(
                     self.layered_graph,
                     type(module_instance),
                     node.args,
                     name=node.name,
                     shape=shape,
-                    origin_module=node.orig_mod
+                    origin_module=node.orig_mod,
                 )
             else:
                 self.layered_graph.ignored_nodes.append(node.name)
 
     def _should_be_included(self, node):
-        if node.op == 'placeholder' or node.op == 'output':
+        if node.op == "placeholder" or node.op == "output":
             return True
         else:
             return self._is_in_include(node) and not self._is_in_exclude(node)
@@ -143,10 +184,13 @@ class FXTraversal(TraversalStrategy):
         include_modules = self.include_modules if self.include_modules else []
         if len(include_fn) == 0 and len(include_modules) == 0:
             return True
-        if node.op == 'call_module' and len(include_modules) > 0:
+        if node.op == "call_module" and len(include_modules) > 0:
             return any(isinstance(node.orig_mod, m) for m in include_modules)
         elif len(include_fn) > 0:
-            return any(node.orig_mod == f or node.orig_mod == getattr(f, '__name__', None) for f in include_fn)
+            return any(
+                node.orig_mod == f or node.orig_mod == getattr(f, "__name__", None)
+                for f in include_fn
+            )
         else:
             return True
 
@@ -155,14 +199,17 @@ class FXTraversal(TraversalStrategy):
         exclude_modules = self.exclude_modules if self.exclude_modules else []
         if len(exclude_modules) == 0 and len(exclude_fn) == 0:
             return False
-        if node.op == 'call_module':
+        if node.op == "call_module":
             return any(isinstance(node.orig_mod, m) for m in exclude_modules)
         else:
-            node_name = getattr(node.orig_mod, '__name__', "name not found in orig")
-            if node_name is "name not found in orig":
+            node_name = getattr(node.orig_mod, "__name__", "name not found in orig")
+            if node_name == "name not found in orig":
                 node_name = str(node.orig_mod)
-            return any(node.orig_mod == f or node_name
-                       == getattr(f, '__name__', "name not found in fn") for f in exclude_fn)
+            return any(
+                node.orig_mod == f
+                or node_name == getattr(f, "__name__", "name not found in fn")
+                for f in exclude_fn
+            )
 
     def restore_traversal(self):
         pass

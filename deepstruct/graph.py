@@ -541,7 +541,9 @@ class LayeredFXGraph(networkx.DiGraph):
 
     def __init__(self, **attr):
         super(LayeredFXGraph, self).__init__(**attr)
-        self._node_name_data = {}  # information for a name -> [layer_number, [indices], output_layer_size]
+        self._node_name_data = (
+            {}
+        )  # information for a name -> [layer_number, [indices], output_layer_size]
         self._mask_for_name = {}
         self.edges_for_name = {}
         self.ignored_nodes = []
@@ -564,7 +566,7 @@ class LayeredFXGraph(networkx.DiGraph):
     def add_vertices(self, count: int, name, output_layer_size=0, layer=None, **kwargs):
         node_data = []
         node_indices = []
-        mask = kwargs.pop('mask', None)
+        mask = kwargs.pop("mask", None)
         if mask is not None:
             self._mask_for_name[name] = mask
         if layer is None:
@@ -589,8 +591,15 @@ class LayeredFXGraph(networkx.DiGraph):
             s_n = str(source_node_name)
             edges = self.edges_for_name.pop(s_n, None)
             source_indices = self._determine_source_indices(s_n)
-            if source_indices is not None:  # ignore nodes that were not added to the graph before e.g. constants
-                self._add_edges(source_indices, target_indices, self._mask_for_name.pop(s_n, None), edges)
+            if (
+                source_indices is not None
+            ):  # ignore nodes that were not added to the graph before e.g. constants
+                self._add_edges(
+                    source_indices,
+                    target_indices,
+                    self._mask_for_name.pop(s_n, None),
+                    edges,
+                )
 
     def _flatten_args(self, nested_list):
         flat_list = []

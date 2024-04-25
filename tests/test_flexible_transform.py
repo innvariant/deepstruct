@@ -1,36 +1,41 @@
 import random
 
 import networkx as nx
-
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import torchvision.models
+import torchvision.models as models
+
 from matplotlib import pyplot as plt
 
 from deepstruct.flexible_transform import GraphTransform
-import torch.nn.functional as F
-
 from deepstruct.traverse_strategies import FXTraversal
-
-import torch
-import torch.nn as nn
-import torchvision.models as models
 
 
 def plot_graph(graph, title):
-    labels = nx.get_node_attributes(graph, 'name')
+    labels = nx.get_node_attributes(graph, "name")
     fig, ax = plt.subplots(figsize=(10, 10))
-    nx.draw(graph, labels=labels, with_labels=True, node_size=700, node_color='lightblue', font_size=8,
-            ax=ax)
+    nx.draw(
+        graph,
+        labels=labels,
+        with_labels=True,
+        node_size=700,
+        node_color="lightblue",
+        font_size=8,
+        ax=ax,
+    )
     plt.title(title)
     plt.show()
 
 
 def calculate_network_metrics(graph):
     metrics = {
-        'nodes': graph.number_of_nodes(),
-        'edges': graph.number_of_edges(),
-        'avg degree': sum(dict(graph.degree()).values()) / graph.number_of_nodes(),
-        'density': nx.density(graph),
-        'Average cluster coefficient': nx.average_clustering(graph)
+        "nodes": graph.number_of_nodes(),
+        "edges": graph.number_of_edges(),
+        "avg degree": sum(dict(graph.degree()).values()) / graph.number_of_nodes(),
+        "density": nx.density(graph),
+        "Average cluster coefficient": nx.average_clustering(graph),
     }
     return metrics
 
@@ -41,7 +46,12 @@ class CNNtoRNN(nn.Module):
         self.cnn = models.resnet50(pretrained=True)
         self.cnn = nn.Sequential(*list(self.cnn.children())[:-2])
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.rnn = nn.LSTM(input_size=2048, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.rnn = nn.LSTM(
+            input_size=2048,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+        )
         self.fc = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
@@ -60,7 +70,9 @@ class CNNtoRNN(nn.Module):
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(
+            in_channels=1, out_channels=6, kernel_size=3, stride=1, padding=1
+        )
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.fc = nn.Linear(54, 2)
 
@@ -77,7 +89,9 @@ class SimpleCNN(nn.Module):
 class SmallCNN(nn.Module):
     def __init__(self):
         super(SmallCNN, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(
+            in_channels=1, out_channels=1, kernel_size=3, stride=1, padding=1
+        )
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.fc = nn.Linear(9, 6)
         self.fc2 = nn.Linear(6, 3)
@@ -96,7 +110,9 @@ class SmallCNN(nn.Module):
 class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=2, kernel_size=2, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(
+            in_channels=1, out_channels=2, kernel_size=2, stride=1, padding=1
+        )
         self.pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)
         self.fc = nn.Linear(1, 2)
 
@@ -142,9 +158,19 @@ def test_fx_transformer_simple_network():
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation")
-    simplenet_names = ["cos", "fc", "size", "view", "pool", "relu", "conv1", "x", "output"]
+    simplenet_names = [
+        "cos",
+        "fc",
+        "size",
+        "view",
+        "pool",
+        "relu",
+        "conv1",
+        "x",
+        "output",
+    ]
     assert len(graph.nodes) == len(simplenet_names)
-    graph_names = nx.get_node_attributes(graph, 'name').values()
+    graph_names = nx.get_node_attributes(graph, "name").values()
     assert all(name in graph_names for name in simplenet_names)
     assert all(name in simplenet_names for name in graph_names)
 
@@ -170,16 +196,31 @@ def test_fx_transformer_simple_network_excludes():
     input_tensor = torch.randn(1, 1, 6, 6)
     excluded_functions = [torch.nn.functional.relu, torch.cos]
     excluded_modules = [torch.nn.modules.Linear, torch.nn.modules.MaxPool2d]
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
-        exclude_fn=excluded_functions,
-        exclude_modules=excluded_modules))
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(
+            exclude_fn=excluded_functions, exclude_modules=excluded_modules
+        ),
+    )
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation")
-    simplenet_names = ["cos", "fc", "size", "view", "pool", "relu", "conv1", "x", "output"]
+    simplenet_names = [
+        "cos",
+        "fc",
+        "size",
+        "view",
+        "pool",
+        "relu",
+        "conv1",
+        "x",
+        "output",
+    ]
     test_names = ["size", "view", "conv1", "x", "output"]
-    assert len(graph.nodes) == len(simplenet_names) - len(excluded_modules) - len(excluded_functions)
-    graph_names = nx.get_node_attributes(graph, 'name').values()
+    assert len(graph.nodes) == len(simplenet_names) - len(excluded_modules) - len(
+        excluded_functions
+    )
+    graph_names = nx.get_node_attributes(graph, "name").values()
     assert all(name in graph_names for name in test_names)
     assert all(name in test_names for name in graph_names)
 
@@ -189,15 +230,18 @@ def test_fx_transformer_simple_network_includes():
     input_tensor = torch.randn(1, 1, 6, 6)
     included_functions = [torch.cos]
     included_modules = [torch.nn.modules.Conv2d, torch.nn.modules.MaxPool2d]
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
-        include_fn=included_functions,
-        include_modules=included_modules))
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(
+            include_fn=included_functions, include_modules=included_modules
+        ),
+    )
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation")
     test_names = ["cos", "pool", "conv1", "x", "output"]
     assert len(graph.nodes) == len(included_functions) + len(included_modules) + 2
-    graph_names = nx.get_node_attributes(graph, 'name').values()
+    graph_names = nx.get_node_attributes(graph, "name").values()
     assert all(name in graph_names for name in test_names)
     assert all(name in test_names for name in graph_names)
 
@@ -205,29 +249,45 @@ def test_fx_transformer_simple_network_includes():
 def test_fx_transformer_simple_network_includes_excludes():
     net = SimpleCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
-        exclude_fn=[torch.cos, torch.Tensor.size],
-        include_modules=[torch.nn.modules.Linear, torch.nn.modules.Conv2d]))
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(
+            exclude_fn=[torch.cos, torch.Tensor.size],
+            include_modules=[torch.nn.modules.Linear, torch.nn.modules.Conv2d],
+        ),
+    )
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation")
     test_names = ["fc", "view", "relu", "conv1", "x", "output"]
-    graph_names = nx.get_node_attributes(graph, 'name').values()
+    graph_names = nx.get_node_attributes(graph, "name").values()
     assert len(graph.nodes) == len(test_names)
     assert all(name in graph_names for name in test_names)
     assert all(name in test_names for name in graph_names)
-    assert graph.has_edge(graph.get_indices_for_name('x')[0], graph.get_indices_for_name('conv1')[0])
-    assert graph.has_edge(graph.get_indices_for_name('conv1')[0], graph.get_indices_for_name('relu')[0])
-    assert graph.has_edge(graph.get_indices_for_name('relu')[0], graph.get_indices_for_name('view')[0])
-    assert graph.has_edge(graph.get_indices_for_name('view')[0], graph.get_indices_for_name('fc')[0])
-    assert graph.has_edge(graph.get_indices_for_name('fc')[0], graph.get_indices_for_name('output')[0])
+    assert graph.has_edge(
+        graph.get_indices_for_name("x")[0], graph.get_indices_for_name("conv1")[0]
+    )
+    assert graph.has_edge(
+        graph.get_indices_for_name("conv1")[0], graph.get_indices_for_name("relu")[0]
+    )
+    assert graph.has_edge(
+        graph.get_indices_for_name("relu")[0], graph.get_indices_for_name("view")[0]
+    )
+    assert graph.has_edge(
+        graph.get_indices_for_name("view")[0], graph.get_indices_for_name("fc")[0]
+    )
+    assert graph.has_edge(
+        graph.get_indices_for_name("fc")[0], graph.get_indices_for_name("output")[0]
+    )
 
 
 def test_fx_fold_modules():
     resnet = torchvision.models.resnet18(True)
     input_tensor = torch.rand(1, 3, 224, 224)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
-        fold_modules=[torch.nn.modules.Sequential]))
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(fold_modules=[torch.nn.modules.Sequential]),
+    )
     graph_transformer.transform(resnet)
     graph = graph_transformer.get_graph()
     assert len(graph.nodes) == 13
@@ -237,9 +297,10 @@ def test_fx_fold_modules():
 def test_fx_unfold_modules():
     net = SimpleCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(
-        unfold_modules=[torch.nn.modules.Linear]
-    ))
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(unfold_modules=[torch.nn.modules.Linear]),
+    )
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation simplenet")
@@ -249,8 +310,7 @@ def test_fx_resnet18():
     print(" ")
     resnet = torchvision.models.resnet18(True)
     input_tensor = torch.rand(1, 3, 224, 224)
-    graph_transformer = GraphTransform(input_tensor,
-                                       traversal_strategy=FXTraversal())
+    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal())
     graph_transformer.transform(resnet)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation resnet")
@@ -260,14 +320,18 @@ def test_fx_alexnet():
     print(" ")
     alexnet = torchvision.models.alexnet(True)
     input_tensor = torch.rand(1, 3, 224, 224)
-    graph_transformer = GraphTransform(input_tensor,
-                                       traversal_strategy=FXTraversal(
-                                           unfold_modules=[object],
-                                           fold_modules=[torch.nn.Conv2d,
-                                                         torch.nn.Linear,
-                                                         torch.nn.BatchNorm2d,
-                                                         torch.nn.MaxPool2d])
-                                       )
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(
+            unfold_modules=[object],
+            fold_modules=[
+                torch.nn.Conv2d,
+                torch.nn.Linear,
+                torch.nn.BatchNorm2d,
+                torch.nn.MaxPool2d,
+            ],
+        ),
+    )
     graph_transformer.transform(alexnet)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation alexnet")
@@ -277,7 +341,9 @@ def test_fx_resnet50():
     print(" ")
     res50 = torchvision.models.resnet50(True)
     input_tensor = torch.rand(1, 3, 224, 224)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(exclude_fn=[torch.add]))
+    graph_transformer = GraphTransform(
+        input_tensor, traversal_strategy=FXTraversal(exclude_fn=[torch.add])
+    )
     graph_transformer.transform(res50)
     plot_graph(graph_transformer.get_graph(), "Transformation resnet 50")
 
@@ -317,5 +383,3 @@ def test_ged():
     print("Kennzahlen von G1:", metrics_G1)
     print("Kennzahlen von G2:", metrics_G2)
     print(ged)
-
-

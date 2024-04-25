@@ -1,35 +1,40 @@
 import networkx as nx
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 
 from matplotlib import pyplot as plt
 
 from deepstruct.flexible_transform import GraphTransform
-import torch.nn.functional as F
-
 from deepstruct.node_map_strategies import LowLevelNodeMap
 from deepstruct.transform import Conv2dLayerFunctor
 from deepstruct.traverse_strategies import FXTraversal
 
-import torch
-import torch.nn as nn
-
 
 def plot_graph(graph, title):
-    labels = nx.get_node_attributes(graph, 'name')
+    labels = nx.get_node_attributes(graph, "name")
     fig, ax = plt.subplots(figsize=(10, 10))
-    nx.draw(graph, labels=labels, with_labels=True, node_size=700, node_color='lightblue', font_size=8,
-            ax=ax)
+    nx.draw(
+        graph,
+        labels=labels,
+        with_labels=True,
+        node_size=700,
+        node_color="lightblue",
+        font_size=8,
+        ax=ax,
+    )
     plt.title(title)
     plt.show()
 
 
 def calculate_network_metrics(graph):
     metrics = {
-        'nodes': graph.number_of_nodes(),
-        'edges': graph.number_of_edges(),
-        'avg degree': sum(dict(graph.degree()).values()) / graph.number_of_nodes(),
-        'density': nx.density(graph),
-        'Average cluster coefficient': nx.average_clustering(graph)
+        "nodes": graph.number_of_nodes(),
+        "edges": graph.number_of_edges(),
+        "avg degree": sum(dict(graph.degree()).values()) / graph.number_of_nodes(),
+        "density": nx.density(graph),
+        "Average cluster coefficient": nx.average_clustering(graph),
     }
     return metrics
 
@@ -37,7 +42,9 @@ def calculate_network_metrics(graph):
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(
+            in_channels=1, out_channels=6, kernel_size=3, stride=1, padding=1
+        )
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.fc = nn.Linear(54, 2)
 
@@ -54,7 +61,9 @@ class SimpleCNN(nn.Module):
 class SmallCNN(nn.Module):
     def __init__(self):
         super(SmallCNN, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(
+            in_channels=1, out_channels=1, kernel_size=3, stride=1, padding=1
+        )
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         self.fc = nn.Linear(9, 6)
         self.fc2 = nn.Linear(6, 3)
@@ -73,7 +82,9 @@ class SmallCNN(nn.Module):
 class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=2, kernel_size=2, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(
+            in_channels=1, out_channels=2, kernel_size=2, stride=1, padding=1
+        )
         self.pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)
         self.fc = nn.Linear(1, 2)
 
@@ -88,15 +99,16 @@ def test_fx_low_level_linear_fully_connected():
     print(" ")
     net = SmallCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
-    graph_transformer = GraphTransform(input_tensor,
-                                       traversal_strategy=FXTraversal(),
-                                       node_map_strategy=LowLevelNodeMap()
-                                       )
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(),
+        node_map_strategy=LowLevelNodeMap(),
+    )
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
-    fc_nodes = graph.get_indices_for_name('fc')
-    fc2_nodes = graph.get_indices_for_name('fc2')
-    cos_nodes = graph.get_indices_for_name('cos')
+    fc_nodes = graph.get_indices_for_name("fc")
+    fc2_nodes = graph.get_indices_for_name("fc2")
+    cos_nodes = graph.get_indices_for_name("cos")
     assert len(fc_nodes) == 9
     assert len(fc2_nodes) == 6
     assert len(cos_nodes) == 3
@@ -117,10 +129,11 @@ def test_fx_low_level_linear():
     print(" ")
     net = SmallCNN()
     input_tensor = torch.randn(1, 1, 6, 6)
-    graph_transformer = GraphTransform(input_tensor,
-                                       traversal_strategy=FXTraversal(),
-                                       node_map_strategy=LowLevelNodeMap(0.15)
-                                       )
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(),
+        node_map_strategy=LowLevelNodeMap(0.15),
+    )
     graph_transformer.transform(net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "Transformation smallnet")
@@ -130,13 +143,16 @@ def test_convnet():
     print(" ")
     conv_net = ConvNet()
     input_tensor = torch.rand(1, 1, 2, 2)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(),
-                                       node_map_strategy=LowLevelNodeMap())
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(),
+        node_map_strategy=LowLevelNodeMap(),
+    )
     graph_transformer.transform(conv_net)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "convnet")
-    conv_nodes = graph.get_indices_for_name('conv1')
-    pool_nodes = graph.get_indices_for_name('pool')
+    conv_nodes = graph.get_indices_for_name("conv1")
+    pool_nodes = graph.get_indices_for_name("pool")
     assert len(conv_nodes) == 4
     assert len(pool_nodes) == 18
     for node in conv_nodes:
@@ -158,7 +174,10 @@ def test_conv_simple():
             channels_in = 3
             kernel_size = (3, 3)
             self.conv1 = nn.Conv2d(
-                in_channels=channels_in, out_channels=2, kernel_size=kernel_size, stride=1
+                in_channels=channels_in,
+                out_channels=2,
+                kernel_size=kernel_size,
+                stride=1,
             )
 
         def forward(self, x):
@@ -170,21 +189,25 @@ def test_conv_simple():
     model = ConvModel()
     model.conv1.weight[:, :].data += 10
     random_input = torch.rand(size=(1, channels_in, input_height, input_width))
-    graph_transformer = GraphTransform(random_input, node_map_strategy=LowLevelNodeMap(0.01))
+    graph_transformer = GraphTransform(
+        random_input, node_map_strategy=LowLevelNodeMap(0.01)
+    )
 
     graph_transformer.transform(model)
     graph = graph_transformer.get_graph()
     output = model.forward(random_input)
     number_output_features = np.prod(output.shape)
     plot_graph(graph, "conv simple")
-    assert len(graph.get_indices_for_name('output')) == number_output_features
+    assert len(graph.get_indices_for_name("output")) == number_output_features
 
 
 def test_conv_with_add():
     class ConvModel(nn.Module):
         def __init__(self):
             super(ConvModel, self).__init__()
-            self.conv1 = nn.Conv2d(in_channels=1, out_channels=2, kernel_size=2, stride=1, padding=1)
+            self.conv1 = nn.Conv2d(
+                in_channels=1, out_channels=2, kernel_size=2, stride=1, padding=1
+            )
             self.pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=0)
 
         def forward(self, x):
@@ -199,15 +222,18 @@ def test_conv_with_add():
     conv_model = ConvModel()
     input_tensor = torch.rand(1, 1, 2, 2)
     print(input_tensor)
-    graph_transformer = GraphTransform(input_tensor, traversal_strategy=FXTraversal(),
-                                       node_map_strategy=LowLevelNodeMap())
+    graph_transformer = GraphTransform(
+        input_tensor,
+        traversal_strategy=FXTraversal(),
+        node_map_strategy=LowLevelNodeMap(),
+    )
     graph_transformer.transform(conv_model)
     graph = graph_transformer.get_graph()
     plot_graph(graph, "convnet")
-    conv_nodes = graph.get_indices_for_name('conv1')
-    pool_nodes = graph.get_indices_for_name('pool')
-    cos_nodes = graph.get_indices_for_name('cos')
-    add_nodes = graph.get_indices_for_name('add')
+    conv_nodes = graph.get_indices_for_name("conv1")
+    pool_nodes = graph.get_indices_for_name("pool")
+    cos_nodes = graph.get_indices_for_name("cos")
+    add_nodes = graph.get_indices_for_name("add")
     print(len(conv_nodes), len(pool_nodes), len(cos_nodes), len(add_nodes))
     for node in conv_nodes:
         assert graph.in_degree(node) == 1
@@ -231,7 +257,10 @@ def test_realistic_convolution():
             channels_in = 3
             kernel_size = (5, 5)
             self.conv1 = nn.Conv2d(
-                in_channels=channels_in, out_channels=2, kernel_size=kernel_size, stride=1
+                in_channels=channels_in,
+                out_channels=2,
+                kernel_size=kernel_size,
+                stride=1,
             )
 
         def forward(self, x):
@@ -243,14 +272,16 @@ def test_realistic_convolution():
     model = ConvModel()
     model.conv1.weight[:, :].data += 10
     random_input = torch.rand(size=(1, channels_in, input_height, input_width))
-    graph_transformer = GraphTransform(random_input, node_map_strategy=LowLevelNodeMap(0.01))
+    graph_transformer = GraphTransform(
+        random_input, node_map_strategy=LowLevelNodeMap(0.01)
+    )
 
     graph_transformer.transform(model)
     graph = graph_transformer.get_graph()
     output = model.forward(random_input)
     number_output_features = np.prod(output.shape)
     # plot_graph(graph, "realistic conv")
-    assert len(graph.get_indices_for_name('output')) == number_output_features
+    assert len(graph.get_indices_for_name("output")) == number_output_features
 
 
 def test_realistic_convolution2():
@@ -295,5 +326,7 @@ def test_transposed_convolution():
     print(number_output_features)
     # Assert
     assert result.last_layer_size == number_output_features
-    nx.draw(result, with_labels=True, node_size=700, node_color='lightblue', font_size=8)
+    nx.draw(
+        result, with_labels=True, node_size=700, node_color="lightblue", font_size=8
+    )
     plt.show()

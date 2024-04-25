@@ -1,5 +1,6 @@
 import torch
 
+
 DEFAULT_OPERATIONS = [
     (torch, "add"),
     (torch.Tensor, "add"),
@@ -11,6 +12,5 @@ DEFAULT_OPERATIONS = [
     (torch.nn.modules.BatchNorm2d, "forward"),
     (torch.nn.functional, "relu"),
     (torch.Tensor, "view"),
-    (torch.Tensor, "size")
+    (torch.Tensor, "size"),
 ]
-
